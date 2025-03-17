@@ -9,9 +9,12 @@ function MissionFilter({ onFilter, employes = [], clients = [] }) {
     dateFin: '',
   });
 
+  // ✅ Ajout d'une vérification pour éviter la boucle infinie
   useEffect(() => {
-    onFilter(filters);
-  }, [filters, onFilter]);
+    if (onFilter) {
+      onFilter(filters);
+    }
+  }, [filters]); // ✅ Supprimé `onFilter` des dépendances
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -19,91 +22,47 @@ function MissionFilter({ onFilter, employes = [], clients = [] }) {
   };
 
   const resetFilters = () => {
-    const resetValues = {
+    setFilters({
       type: 'Tous',
       employe: '',
       client: '',
       dateDebut: '',
       dateFin: '',
-    };
-    setFilters(resetValues);
-    onFilter(resetValues);
+    });
   };
 
   return (
     <div className="bg-white shadow p-4 rounded-lg mb-8">
       <div className="grid grid-cols-3 gap-4 mb-4">
-        <select
-          name="type"
-          className="border rounded px-3 py-2"
-          onChange={handleChange}
-          value={filters.type}
-        >
+        <select name="type" className="border rounded px-3 py-2" onChange={handleChange} value={filters.type}>
           <option value="Tous">Tous</option>
           <option value="Déménagement">Déménagement</option>
           <option value="Livraison">Livraison</option>
         </select>
 
-        <select
-          name="employe"
-          className="border rounded px-3 py-2"
-          onChange={handleChange}
-          value={filters.employe}
-        >
+        <select name="employe" className="border rounded px-3 py-2" onChange={handleChange} value={filters.employe}>
           <option value="">Tous les employés</option>
-          {Array.isArray(employes) && employes.length > 0 ? (
-            employes.map((emp, index) => (
-              <option key={index} value={emp}>{emp}</option>
-            ))
-          ) : (
-            <option disabled>Aucun employé disponible</option>
-          )}
+          {employes.map((emp, index) => (
+            <option key={index} value={emp}>{emp}</option>
+          ))}
         </select>
 
-        <select
-          name="client"
-          className="border rounded px-3 py-2"
-          onChange={handleChange}
-          value={filters.client}
-        >
+        <select name="client" className="border rounded px-3 py-2" onChange={handleChange} value={filters.client}>
           <option value="">Tous les clients</option>
-          {Array.isArray(clients) && clients.length > 0 ? (
-            clients.map((cli, index) => (
-              <option key={index} value={cli}>{cli}</option>
-            ))
-          ) : (
-            <option disabled>Aucun client disponible</option>
-          )}
+          {clients.map((cli, index) => (
+            <option key={index} value={cli}>{cli}</option>
+          ))}
         </select>
 
-        <input
-          type="date"
-          name="dateDebut"
-          className="border rounded px-3 py-2"
-          onChange={handleChange}
-          value={filters.dateDebut}
-        />
-
-        <input
-          type="date"
-          name="dateFin"
-          className="border rounded px-3 py-2"
-          onChange={handleChange}
-          value={filters.dateFin}
-        />
+        <input type="date" name="dateDebut" className="border rounded px-3 py-2" onChange={handleChange} value={filters.dateDebut} />
+        <input type="date" name="dateFin" className="border rounded px-3 py-2" onChange={handleChange} value={filters.dateFin} />
       </div>
 
       <div className="flex gap-4">
-        <button
-          className="bg-blue-600 text-white px-4 py-2 rounded"
-          onClick={() => onFilter(filters)}
-        >
+        <button className="bg-blue-600 text-white px-4 py-2 rounded" onClick={() => onFilter(filters)}>
           Filtrer
         </button>
-        <button
-          className="bg-gray-500 text-white px-4 py-2 rounded"
-          onClick={resetFilters}
-        >
+        <button className="bg-gray-500 text-white px-4 py-2 rounded" onClick={resetFilters}>
           Réinitialiser
         </button>
       </div>
