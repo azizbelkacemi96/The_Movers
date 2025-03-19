@@ -50,7 +50,7 @@ function MissionForm({ addMission, missionToEdit, updateMission, cancelEdit }) {
   return (
     <form onSubmit={handleSubmit} className="bg-white shadow p-5 rounded-lg mb-8">
       <h2 className="text-xl font-semibold mb-4 text-gray-700">
-        {missionToEdit ? 'Modifier la Mission' : 'Ajouter une Mission'}
+        {missionToEdit ? 'Modifier la Mission' : '🆕 Ajouter une Mission'}
       </h2>
       <div className="grid grid-cols-2 gap-4 mb-4">
         <select

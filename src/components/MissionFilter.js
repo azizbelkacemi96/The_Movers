@@ -9,12 +9,11 @@ function MissionFilter({ onFilter, employes = [], clients = [] }) {
     dateFin: '',
   });
 
-  // ✅ Ajout d'une vérification pour éviter la boucle infinie
   useEffect(() => {
     if (onFilter) {
       onFilter(filters);
     }
-  }, [filters]); // ✅ Supprimé `onFilter` des dépendances
+  }, [filters]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
