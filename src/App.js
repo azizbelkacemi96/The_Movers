@@ -47,6 +47,10 @@ function MainLayout() {
     setIsModalOpen(false);
   };
 
+  // Tri des missions par ordre chronologique décroissant
+  const missionsTriees = [...(missionsFiltrees.length > 0 ? missionsFiltrees : missions)]
+    .sort((a, b) => new Date(b.date) - new Date(a.date));
+
   return (
     <div className="container mx-auto p-4">
       <nav className="bg-gray-800 p-4 mb-4 text-white flex justify-between">
@@ -72,9 +76,7 @@ function MainLayout() {
           path="/"
           element={
             <>
-              <MissionForm
-                addMission={addMission}
-              />
+              <MissionForm addMission={addMission} />
               <MissionFilter
                 onFilter={(filters) => {
                   let resultats = [...missions];
@@ -101,7 +103,7 @@ function MainLayout() {
                 clients={missions.map(m => m.client).filter(Boolean)}
               />
               <MissionList
-                missions={missionsFiltrees.length > 0 ? missionsFiltrees : missions}
+                missions={missionsTriees}
                 deleteMission={deleteMission}
                 editMission={editMission}
               />
