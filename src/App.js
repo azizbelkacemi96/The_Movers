@@ -4,6 +4,7 @@ import MissionForm from './components/MissionForm';
 import MissionList from './components/MissionList';
 import MissionFilter from './components/MissionFilter';
 import Finance from './components/Finance';
+import MissionEditModal from './components/MissionEditModal';
 
 function App() {
   return (
@@ -16,11 +17,11 @@ function App() {
 function MainLayout() {
   const [missions, setMissions] = useState([]);
   const [missionsFiltrees, setMissionsFiltrees] = useState([]);
-  const [missionToEdit, setMissionToEdit] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [currentMission, setCurrentMission] = useState(null);
 
   const location = useLocation();
 
-  // 🔄 Force le re-render lors du changement d'URL
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [location.pathname]);
@@ -34,21 +35,20 @@ function MainLayout() {
   };
 
   const editMission = (index) => {
-    const selectedMission = missions[index];
-    setMissionToEdit({ ...selectedMission, index });
+    setCurrentMission({ ...missions[index], index });
+    setIsModalOpen(true);
   };
 
-  const updateMission = (updatedMission) => {
+  const handleSaveMission = (updatedMission) => {
     const updatedMissions = missions.map((mission, index) =>
       index === updatedMission.index ? updatedMission : mission
     );
     setMissions(updatedMissions);
-    setMissionToEdit(null);
+    setIsModalOpen(false);
   };
 
   return (
     <div className="container mx-auto p-4">
-      {/* ✅ Fix de la NavBar avec `NavLink` */}
       <nav className="bg-gray-800 p-4 mb-4 text-white flex justify-between">
         <div>
           <NavLink 
@@ -67,7 +67,6 @@ function MainLayout() {
         </div>
       </nav>
 
-      {/* ✅ Routes qui fonctionnent sans bug */}
       <Routes key={location.pathname}>
         <Route
           path="/"
@@ -75,9 +74,6 @@ function MainLayout() {
             <>
               <MissionForm
                 addMission={addMission}
-                updateMission={updateMission}
-                missionToEdit={missionToEdit}
-                cancelEdit={() => setMissionToEdit(null)}
               />
               <MissionFilter
                 onFilter={(filters) => {
@@ -86,19 +82,15 @@ function MainLayout() {
                   if (filters.type && filters.type !== 'Tous') {
                     resultats = resultats.filter(m => m.type === filters.type);
                   }
-
                   if (filters.employe) {
                     resultats = resultats.filter(m => m.employe && m.employe.toLowerCase().includes(filters.employe.toLowerCase()));
                   }
-
                   if (filters.client) {
                     resultats = resultats.filter(m => m.client && m.client.toLowerCase().includes(filters.client.toLowerCase()));
                   }
-
                   if (filters.dateDebut) {
                     resultats = resultats.filter(m => m.date && new Date(m.date) >= new Date(filters.dateDebut));
                   }
-
                   if (filters.dateFin) {
                     resultats = resultats.filter(m => m.date && new Date(m.date) <= new Date(filters.dateFin));
                   }
@@ -108,7 +100,17 @@ function MainLayout() {
                 employes={missions.map(m => m.employe).filter(Boolean)}
                 clients={missions.map(m => m.client).filter(Boolean)}
               />
-              <MissionList missions={missionsFiltrees.length > 0 ? missionsFiltrees : missions} deleteMission={deleteMission} editMission={editMission} />
+              <MissionList
+                missions={missionsFiltrees.length > 0 ? missionsFiltrees : missions}
+                deleteMission={deleteMission}
+                editMission={editMission}
+              />
+              <MissionEditModal
+                mission={currentMission}
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                onSave={handleSaveMission}
+              />
             </>
           }
         />
