@@ -1,92 +1,81 @@
-import React, { useState } from 'react';
-import * as XLSX from 'xlsx';
-import { saveAs } from 'file-saver';
+import React, { useState, useEffect } from 'react';
+import api from '../api';
 
-function MissionList({ missions, deleteMission, editMission }) {
+function MissionList({ missions, editMission, onDeleteMission }) {
   const [currentPage, setCurrentPage] = useState(1);
-  const missionsParPage = 10;
+  const missionsParPage = 5;
 
-  // Calcul des index pour la pagination
-  const indexDerniereMission = currentPage * missionsParPage;
-  const indexPremiereMission = indexDerniereMission - missionsParPage;
-  const missionsCourantes = missions.slice(indexPremiereMission, indexDerniereMission);
+  const sortedMissions = [...missions].sort((a, b) => new Date(b.date) - new Date(a.date));
+  const totalPages = Math.ceil(sortedMissions.length / missionsParPage);
 
-  // Changement de page
-  const paginate = (pageNumber) => setCurrentPage(pageNumber);
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [missions]);
 
-  // Fonction export Excel
-  const exportToExcel = () => {
-    const worksheet = XLSX.utils.json_to_sheet(missions);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Missions");
+  const missionsAffichees = sortedMissions.slice((currentPage - 1) * missionsParPage, currentPage * missionsParPage);
 
-    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-    const data = new Blob([excelBuffer], { type: 'application/octet-stream' });
-    saveAs(data, `missions_${new Date().toISOString().slice(0,10)}.xlsx`);
+  const handleDelete = (id) => {
+    api.delete(`/missions/${id}`).then(onDeleteMission);
   };
 
-  // Calcul nombre total de pages
-  const totalPages = Math.ceil(missions.length / missionsParPage);
+  const totalCA = missions.reduce((sum, m) => sum + parseFloat(m.prixTTC), 0);
+  const totalCharges = missions.reduce((sum, m) => sum + parseFloat(m.salaire) + parseFloat(m.charges), 0);
+  const benefice = totalCA - totalCharges;
 
   return (
-    <div className="bg-white shadow p-4 rounded-lg">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-semibold">📋 Liste des Missions</h2>
-        <button onClick={exportToExcel} className="bg-green-600 text-white px-4 py-2 rounded">
-          📥 Exporter Excel
-        </button>
+    <div>
+      {/* Partie Résultats */}
+      <div className="bg-gray-100 p-4 rounded shadow mb-4 flex justify-around text-center">
+        <div>
+          <p className="text-lg font-bold">💰 Chiffre d'affaires</p>
+          <p>{totalCA.toFixed(2)} €</p>
+        </div>
+        <div>
+          <p className="text-lg font-bold">📉 Charges totales</p>
+          <p>{totalCharges.toFixed(2)} €</p>
+        </div>
+        <div>
+          <p className="text-lg font-bold">📈 Bénéfice</p>
+          <p>{benefice.toFixed(2)} €</p>
+        </div>
       </div>
 
-      <table className="min-w-full table-auto border">
+      {/* Tableau des missions */}
+      <table className="min-w-full bg-white shadow rounded-lg overflow-hidden">
         <thead className="bg-gray-200">
           <tr>
-            <th className="px-4 py-2">Type</th>
-            <th className="px-4 py-2">Date</th>
-            <th className="px-4 py-2">Client</th>
-            <th className="px-4 py-2">Prix HT (€)</th>
-            <th className="px-4 py-2">Prix TTC (€)</th>
-            <th className="px-4 py-2">Employé</th>
-            <th className="px-4 py-2">Salaire (€)</th>
-            <th className="px-4 py-2">Charges (€)</th>
-            <th className="px-4 py-2">Résultat HT (€)</th>
-            <th className="px-4 py-2">Résultat TTC (€)</th>
-            <th className="px-4 py-2">Actions</th>
+            {["Type", "Date", "Client", "Prix HT (€)", "Prix TTC (€)", "Employé", "Salaire (€)", "Charges (€)", "Actions"].map(h => (
+              <th key={h} className="px-4 py-2">{h}</th>
+            ))}
           </tr>
         </thead>
         <tbody>
-          {missionsCourantes.length > 0 ? (
-            missionsCourantes.map((mission, index) => (
-              <tr key={index} className="text-center border-b hover:bg-gray-100">
-                <td className="px-4 py-2">{mission.type}</td>
-                <td className="px-4 py-2">{mission.date}</td>
-                <td className="px-4 py-2">{mission.client}</td>
-                <td className="px-4 py-2">{mission.prixHT} €</td>
-                <td className="px-4 py-2">{mission.prixTTC} €</td>
-                <td className="px-4 py-2">{mission.employe}</td>
-                <td className="px-4 py-2">{mission.salaire} €</td>
-                <td className="px-4 py-2">{mission.charges} €</td>
-                <td className="px-4 py-2">{mission.resultatHT} €</td>
-                <td className="px-4 py-2">{mission.resultatTTC} €</td>
-                <td className="px-4 py-2 flex gap-2">
-                  <button className="bg-green-500 text-white px-2 py-1 rounded" onClick={() => editMission(index + indexPremiereMission)}>Modifier</button>
-                  <button className="bg-red-500 text-white px-2 py-1 rounded" onClick={() => deleteMission(index + indexPremiereMission)}>Supprimer</button>
-                </td>
-              </tr>
-            ))
-          ) : (
-            <tr>
-              <td colSpan="11" className="text-center py-4">Aucune mission enregistrée.</td>
+          {missionsAffichees.map(m => (
+            <tr key={m.id} className="border-b hover:bg-gray-100 text-center">
+              <td className="px-4 py-2">{m.type}</td>
+              <td className="px-4 py-2">{m.date}</td>
+              <td className="px-4 py-2">{m.client}</td>
+              <td className="px-4 py-2">{parseFloat(m.prixHT).toFixed(2)}</td>
+              <td className="px-4 py-2">{parseFloat(m.prixTTC).toFixed(2)}</td>
+              <td className="px-4 py-2">{m.employe}</td>
+              <td className="px-4 py-2">{parseFloat(m.salaire).toFixed(2)}</td>
+              <td className="px-4 py-2">{parseFloat(m.charges).toFixed(2)}</td>
+              <td className="px-4 py-2">
+                <button className="bg-green-500 text-white px-2 rounded" onClick={() => editMission(m)}>Modifier</button>
+                <button className="bg-red-500 text-white px-2 ml-2 rounded" onClick={() => handleDelete(m.id)}>Supprimer</button>
+              </td>
             </tr>
-          )}
+          ))}
         </tbody>
       </table>
 
       {/* Pagination */}
       <div className="flex justify-center mt-4">
         {[...Array(totalPages)].map((_, i) => (
-          <button key={i} onClick={() => paginate(i + 1)}
-            className={`px-3 py-1 mx-1 rounded ${currentPage === i + 1 ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
-          >
+          <button
+            key={i}
+            className={`mx-1 px-3 py-1 rounded ${currentPage === i + 1 ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+            onClick={() => setCurrentPage(i + 1)}>
             {i + 1}
           </button>
         ))}
