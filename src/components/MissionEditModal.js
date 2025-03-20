@@ -1,58 +1,58 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from 'react';
+import api from '../api';
 
 function MissionEditModal({ mission, isOpen, onClose, onSave }) {
-  const [editedMission, setEditedMission] = useState(mission || {});
+  const [form, setForm] = useState({
+    type: '',
+    date: '',
+    client: '',
+    prixHT: '',
+    prixTTC: '',
+    employe: '',
+    salaire: '',
+    charges: ''
+  });
 
   useEffect(() => {
-    if (mission) {
-      setEditedMission(mission);
-    }
+    if (mission) setForm(mission);
   }, [mission]);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setEditedMission({ ...editedMission, [name]: value });
+  const handleChange = ({ target: { name, value } }) => {
+    let updatedForm = { ...form, [name]: value };
+    if (name === 'prixHT') {
+      updatedForm.prixTTC = ((parseFloat(value) || 0) * 1.2).toFixed(2);
+    }
+    setForm(updatedForm);
   };
 
-  const handleSubmit = () => {
-    onSave(editedMission);
-    onClose();
+  const handleSave = () => {
+    api.put(`/missions/${form.id}`, form)
+      .then(() => onSave())
+      .catch(err => console.error(err));
   };
 
-  if (!isOpen) return null;
+  if (!isOpen || !mission) return null;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-      <div className="bg-white p-6 rounded-lg w-1/3">
-        <h2 className="text-xl font-semibold mb-4">Modifier la Mission</h2>
+      <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-lg">
+        <h2 className="text-xl font-bold mb-4">Modifier la Mission</h2>
 
-        <label className="block mb-2">Type :</label>
-        <select name="type" value={editedMission.type || ""} onChange={handleChange} className="border px-3 py-2 w-full mb-4">
-          <option value="Déménagement">Déménagement</option>
-          <option value="Livraison">Livraison</option>
+        <select name="type" value={form.type} className="border rounded px-3 py-2 w-full mb-2" onChange={handleChange}>
+          <option>Déménagement</option>
+          <option>Livraison</option>
         </select>
+        <input type="date" name="date" value={form.date} className="border rounded px-3 py-2 w-full mb-2" onChange={handleChange} />
+        <input name="client" value={form.client} placeholder="Client" className="border rounded px-3 py-2 w-full mb-2" onChange={handleChange} />
+        <input name="prixHT" type="number" value={form.prixHT} placeholder="Prix HT (€)" className="border rounded px-3 py-2 w-full mb-2" onChange={handleChange} />
+        <input name="prixTTC" type="number" value={form.prixTTC} readOnly placeholder="Prix TTC (€)" className="border rounded px-3 py-2 bg-gray-100 w-full mb-2" />
+        <input name="employe" value={form.employe} placeholder="Employé" className="border rounded px-3 py-2 w-full mb-2" onChange={handleChange} />
+        <input name="salaire" type="number" value={form.salaire} placeholder="Salaire (€)" className="border rounded px-3 py-2 w-full mb-2" onChange={handleChange} />
+        <input name="charges" type="number" value={form.charges} placeholder="Charges (€)" className="border rounded px-3 py-2 w-full mb-2" onChange={handleChange} />
 
-        <label className="block mb-2">Date :</label>
-        <input type="date" name="date" value={editedMission.date || ""} onChange={handleChange} className="border px-3 py-2 w-full mb-4"/>
-
-        <label className="block mb-2">Client :</label>
-        <input name="client" value={editedMission.client || ""} onChange={handleChange} className="border px-3 py-2 w-full mb-4"/>
-
-        <label className="block mb-2">Prix HT (€) :</label>
-        <input type="number" step="0.01" name="prixHT" value={editedMission.prixHT || ""} onChange={handleChange} className="border px-3 py-2 w-full mb-4"/>
-
-        <label className="block mb-2">Employé :</label>
-        <input name="employe" value={editedMission.employe || ""} onChange={handleChange} className="border px-3 py-2 w-full mb-4"/>
-
-        <label className="block mb-2">Salaire (€) :</label>
-        <input type="number" step="0.01" name="salaire" value={editedMission.salaire || ""} onChange={handleChange} className="border px-3 py-2 w-full mb-4"/>
-
-        <label className="block mb-2">Charges (€) :</label>
-        <input type="number" step="0.01" name="charges" value={editedMission.charges || ""} onChange={handleChange} className="border px-3 py-2 w-full mb-4"/>
-
-        <div className="flex justify-end gap-4">
-          <button onClick={handleSubmit} className="bg-blue-600 text-white px-4 py-2 rounded">Enregistrer</button>
-          <button onClick={onClose} className="bg-gray-400 text-white px-4 py-2 rounded">Annuler</button>
+        <div className="mt-4 flex justify-end space-x-2">
+          <button className="bg-gray-500 text-white px-4 py-2 rounded" onClick={onClose}>Annuler</button>
+          <button className="bg-blue-500 text-white px-4 py-2 rounded" onClick={handleSave}>Enregistrer</button>
         </div>
       </div>
     </div>

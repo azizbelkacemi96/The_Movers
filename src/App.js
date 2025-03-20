@@ -1,98 +1,70 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Route, Routes, NavLink, useLocation } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
+import Navbar from './components/Navbar';
+import HomeDashboard from './components/HomeDashboard';
+import Finance from './components/Finance';
 import MissionForm from './components/MissionForm';
 import MissionList from './components/MissionList';
 import MissionFilter from './components/MissionFilter';
-import Finance from './components/Finance';
 import MissionEditModal from './components/MissionEditModal';
-import HomeDashboard from './components/HomeDashboard';
+import api from './api';
+import * as XLSX from 'xlsx';
 
 function App() {
-  return (
-    <Router>
-      <MainLayout />
-    </Router>
-  );
-}
-
-function MainLayout() {
   const [missions, setMissions] = useState([]);
   const [missionsFiltrees, setMissionsFiltrees] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentMission, setCurrentMission] = useState(null);
 
-  const location = useLocation();
+  // Récupération des missions depuis l'API
+  const fetchMissions = () => {
+    api.get('/missions')
+      .then(res => {
+        const sortedMissions = res.data.sort((a, b) => new Date(b.date) - new Date(a.date)); 
+        setMissions(sortedMissions);
+        setMissionsFiltrees(sortedMissions);
+      })
+      .catch(err => console.error(err));
+  };
 
   useEffect(() => {
-    window.scrollTo(0, 0);
-  }, [location.pathname]);
+    fetchMissions();
+  }, []);
 
-  const addMission = (mission) => {
-    setMissions([...missions, mission]);
-  };
-
-  const deleteMission = (index) => {
-    setMissions(missions.filter((_, i) => i !== index));
-  };
-
-  const editMission = (index) => {
-    setCurrentMission({ ...missions[index], index });
+  const editMission = (mission) => {
+    setCurrentMission(mission);
     setIsModalOpen(true);
   };
 
-  const handleSaveMission = (updatedMission) => {
-    const updatedMissions = missions.map((mission, index) =>
-      index === updatedMission.index ? updatedMission : mission
-    );
-    setMissions(updatedMissions);
+  const handleSaveMission = () => {
+    fetchMissions();
     setIsModalOpen(false);
   };
 
-  const missionsTriees = [...(missionsFiltrees.length > 0 ? missionsFiltrees : missions)]
-    .sort((a, b) => new Date(b.date) - new Date(a.date));
+  const exportToExcel = () => {
+    const ws = XLSX.utils.json_to_sheet(missionsFiltrees);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Missions");
+    XLSX.writeFile(wb, "missions.xlsx");
+  };
 
   return (
     <div className="container mx-auto p-4">
-      <nav className="bg-gray-800 p-4 mb-4 text-white flex justify-between">
-        <div>
-          <NavLink to="/" className={({ isActive }) => isActive ? "text-yellow-400 font-bold mr-4" : "mr-4"} end>
-            🏠 Dashboard
-          </NavLink>
-          <NavLink to="/missions" className={({ isActive }) => isActive ? "text-yellow-400 font-bold mr-4" : "mr-4"}>
-            📋 Missions
-          </NavLink>
-          <NavLink to="/finance" className={({ isActive }) => isActive ? "text-yellow-400 font-bold" : ""}>
-            💰 Finance
-          </NavLink>
-        </div>
-      </nav>
+      <Navbar />
 
-      <Routes key={location.pathname}>
+      <Routes>
         <Route path="/" element={<HomeDashboard />} />
         <Route path="/missions" element={
-          <>
-            <MissionForm addMission={addMission} />
-            <MissionFilter
-              onFilter={(filters) => {
-                let resultats = [...missions];
-                if (filters.type && filters.type !== 'Tous') resultats = resultats.filter(m => m.type === filters.type);
-                if (filters.employe) resultats = resultats.filter(m => m.employe && m.employe.toLowerCase().includes(filters.employe.toLowerCase()));
-                if (filters.client) resultats = resultats.filter(m => m.client && m.client.toLowerCase().includes(filters.client.toLowerCase()));
-                if (filters.dateDebut) resultats = resultats.filter(m => m.date && new Date(m.date) >= new Date(filters.dateDebut));
-                if (filters.dateFin) resultats = resultats.filter(m => m.date && new Date(m.date) <= new Date(filters.dateFin));
-                setMissionsFiltrees(resultats);
-              }}
-              employes={missions.map(m => m.employe).filter(Boolean)}
-              clients={missions.map(m => m.client).filter(Boolean)}
-            />
-            <MissionList missions={missionsTriees} deleteMission={deleteMission} editMission={editMission} />
-            <MissionEditModal
-              mission={currentMission}
-              isOpen={isModalOpen}
-              onClose={() => setIsModalOpen(false)}
-              onSave={handleSaveMission}
-            />
-          </>
+          <div>
+            <h1 className="text-2xl font-bold mb-4">📋 Missions</h1>
+            <MissionForm onMissionAdded={fetchMissions} />
+            <MissionFilter missions={missions} onFilter={setMissionsFiltrees} />
+            <button className="bg-green-500 hover:bg-green-700 text-white py-2 px-4 rounded my-4" onClick={exportToExcel}>
+              📊 Exporter Excel
+            </button>
+            <MissionList missions={missionsFiltrees} editMission={editMission} onDeleteMission={fetchMissions} />
+            <MissionEditModal mission={currentMission} isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSave={handleSaveMission} />
+          </div>
         } />
         <Route path="/finance" element={<Finance />} />
       </Routes>
