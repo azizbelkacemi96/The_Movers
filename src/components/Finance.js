@@ -1,160 +1,215 @@
-import React, { useState, useEffect } from 'react';
-import InvestissementEditModal from './InvestissementEditModal';
-import * as XLSX from 'xlsx';
-import { saveAs } from 'file-saver';
+import React, { useEffect, useState } from "react";
+import api from "../api";
+import Modal from "react-modal";
+import * as XLSX from "xlsx";
 
-function Finance() {
-  const [investissements, setInvestissements] = useState(() => {
-    const saved = localStorage.getItem("investissements");
-    return saved ? JSON.parse(saved) : [];
-  });
+Modal.setAppElement("#root");
 
-  const [newInvestissement, setNewInvestissement] = useState({
-    associe: 'Aziz', montant: '', motif: ''
-  });
-
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [currentInvestissement, setCurrentInvestissement] = useState(null);
+const Finance = () => {
+  const [investissements, setInvestissements] = useState([]);
+  const [form, setForm] = useState({ nom: "", montant: "", date: "", categorie: "" });
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [selectedInvestissement, setSelectedInvestissement] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const investissementsParPage = 5;
 
+  const totalPages = Math.ceil(investissements.length / investissementsParPage);
+  const indexOfLast = currentPage * investissementsParPage;
+  const indexOfFirst = indexOfLast - investissementsParPage;
+  const investissementsPage = investissements.slice(indexOfFirst, indexOfLast);
+
+  const fetchInvestissements = () => {
+    api.get("/finance").then((res) => setInvestissements(res.data)).catch(console.error);
+  };
+
   useEffect(() => {
-    localStorage.setItem("investissements", JSON.stringify(investissements));
-  }, [investissements]);
+    fetchInvestissements();
+  }, []);
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setNewInvestissement({ ...newInvestissement, [name]: value });
+    setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const addInvestissement = () => {
-    if (!newInvestissement.associe || !newInvestissement.montant || !newInvestissement.motif) {
-      alert("Veuillez remplir tous les champs.");
-      return;
-    }
-    const montant = parseFloat(newInvestissement.montant);
-    if (isNaN(montant) || montant <= 0) {
-      alert("Veuillez entrer un montant valide.");
-      return;
-    }
-    setInvestissements([...investissements, { ...newInvestissement, montant }]);
-    setNewInvestissement({ associe: 'Aziz', montant: '', motif: '' });
+  const handleAdd = (e) => {
+    e.preventDefault();
+    api.post("/finance", form)
+      .then(() => {
+        fetchInvestissements();
+        setForm({ nom: "", montant: "", date: "", categorie: "" });
+      })
+      .catch(console.error);
   };
 
-  const editInvestissement = (index) => {
-    setCurrentInvestissement({ ...investissements[index], index });
-    setIsModalOpen(true);
+  const handleDelete = (id) => {
+    api.delete(`/finance/${id}`)
+      .then(fetchInvestissements)
+      .catch(console.error);
   };
 
-  const handleSaveInvestissement = (updatedInvestissement) => {
-    const updatedInvestissements = investissements.map((inv, index) =>
-      index === updatedInvestissement.index ? updatedInvestissement : inv
-    );
-    setInvestissements(updatedInvestissements);
-    setIsModalOpen(false);
+  const handleEditClick = (item) => {
+    setSelectedInvestissement(item);
+    setEditModalOpen(true);
   };
 
-  const deleteInvestissement = (index) => {
-    setInvestissements(investissements.filter((_, i) => i !== index));
+  const handleEditSave = () => {
+    api.put(`/finance/${selectedInvestissement.id}`, selectedInvestissement)
+      .then(() => {
+        fetchInvestissements();
+        setEditModalOpen(false);
+      })
+      .catch(console.error);
   };
-
-  const totalInvestiParAssocie = (nom) => investissements
-    .filter(inv => inv.associe === nom)
-    .reduce((total, inv) => total + inv.montant, 0).toFixed(2);
-
-  const indexDernier = currentPage * investissementsParPage;
-  const indexPremier = indexDernier - investissementsParPage;
-  const investissementsCourants = investissements.slice(indexPremier, indexDernier);
-  const totalPages = Math.ceil(investissements.length / investissementsParPage);
 
   const exportToExcel = () => {
-    const worksheet = XLSX.utils.json_to_sheet(investissements);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Investissements");
-
-    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-    const data = new Blob([excelBuffer], { type: 'application/octet-stream' });
-    saveAs(data, `investissements_${new Date().toISOString().slice(0,10)}.xlsx`);
+    const ws = XLSX.utils.json_to_sheet(investissements);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Investissements");
+    XLSX.writeFile(wb, "investissements.xlsx");
   };
 
+  const totalMontant = investissements.reduce((acc, cur) => acc + Number(cur.montant), 0);
+
+  const totalParPersonne = investissements.reduce((acc, inv) => {
+    if (!inv.nom) return acc;
+    acc[inv.nom] = (acc[inv.nom] || 0) + Number(inv.montant);
+    return acc;
+  }, {});
+
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold text-center my-4">💰 Suivi Financier</h1>
+    <div className="p-4">
+      <h1 className="text-2xl font-bold mb-4">💼 Finance</h1>
 
-      <div className="bg-white shadow p-4 rounded-lg mb-8">
-        <h2 className="text-xl font-semibold mb-4">Ajouter un Investissement</h2>
-        <div className="grid grid-cols-3 gap-4 mb-4">
-          <select name="associe" className="border rounded px-3 py-2"
-            onChange={handleChange} value={newInvestissement.associe}
-          >
-            <option>Aziz</option>
-            <option>Koussi</option>
-          </select>
-          <input type="number" name="montant" placeholder="Montant (€)"
-            className="border rounded px-3 py-2"
-            onChange={handleChange} value={newInvestissement.montant}
-          />
-          <input type="text" name="motif" placeholder="Motif"
-            className="border rounded px-3 py-2"
-            onChange={handleChange} value={newInvestissement.motif}
-          />
-        </div>
-        <button className="bg-blue-600 text-white px-4 py-2 rounded" onClick={addInvestissement}>Ajouter</button>
+      <div className="mb-6">
+        <h2 className="text-lg font-semibold mb-2">➕ Ajouter un investissement</h2>
+        <form onSubmit={handleAdd} className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <input name="nom" value={form.nom} onChange={handleChange} placeholder="👤 Nom de l'investisseur" className="border p-2 rounded" />
+          <input name="montant" value={form.montant} onChange={handleChange} placeholder="💰 Montant (€)" type="number" className="border p-2 rounded" />
+          <input name="date" value={form.date} onChange={handleChange} placeholder="📅 Date" type="date" className="border p-2 rounded" />
+          <input name="categorie" value={form.categorie} onChange={handleChange} placeholder="🗂️ Catégorie" className="border p-2 rounded" />
+          <button type="submit" className="bg-green-600 text-white col-span-2 md:col-span-1 px-4 py-2 rounded">Ajouter</button>
+        </form>
       </div>
 
-      <div className="bg-white shadow p-4 rounded-lg mb-4">
-        <h2 className="text-xl font-semibold mb-4">Total Investi par Associé</h2>
-        <p>💼 <strong>Aziz :</strong> {totalInvestiParAssocie('Aziz')} €</p>
-        <p>💼 <strong>Koussi :</strong> {totalInvestiParAssocie('Koussi')} €</p>
+      <div className="mb-4 flex justify-between items-center">
+        <p className="font-medium">💶 Total des investissements : <strong>{totalMontant.toFixed(2)} €</strong></p>
+        <button onClick={exportToExcel} className="bg-blue-500 text-white px-4 py-2 rounded">📊 Export Excel</button>
       </div>
 
-      <div className="bg-white shadow p-4 rounded-lg flex justify-between items-center">
-        <h2 className="text-xl font-semibold">Historique des Investissements</h2>
-        <button onClick={exportToExcel} className="bg-green-600 text-white px-4 py-2 rounded">📥 Exporter Excel</button>
+      {/* Récap par investisseur */}
+      <div className="mb-6 bg-yellow-50 border border-yellow-300 rounded p-4">
+        <h3 className="font-semibold mb-2">📊 Répartition par investisseur :</h3>
+        <ul className="grid grid-cols-1 md:grid-cols-2 gap-2">
+          {Object.entries(totalParPersonne).map(([nom, total]) => (
+            <li key={nom} className="flex justify-between">
+              <span>👤 {nom}</span>
+              <span className="font-medium">{total.toFixed(2)} €</span>
+            </li>
+          ))}
+        </ul>
       </div>
 
-      <table className="min-w-full table-auto border my-4">
-        <thead className="bg-gray-200">
-          <tr>
-            <th className="px-4 py-2">Associé</th>
-            <th className="px-4 py-2">Montant (€)</th>
-            <th className="px-4 py-2">Motif</th>
-            <th className="px-4 py-2">Actions</th>
+      <table className="w-full border border-gray-300">
+        <thead>
+          <tr className="bg-gray-100">
+            <th className="border p-2">👤 Nom</th>
+            <th className="border p-2">💰 Montant</th>
+            <th className="border p-2">📅 Date</th>
+            <th className="border p-2">🗂️ Catégorie</th>
+            <th className="border p-2">Actions</th>
           </tr>
         </thead>
         <tbody>
-          {investissementsCourants.map((inv, idx) => (
-            <tr key={idx} className="text-center border-b hover:bg-gray-100">
-              <td className="px-4 py-2">{inv.associe}</td>
-              <td className="px-4 py-2">{inv.montant.toFixed(2)} €</td>
-              <td className="px-4 py-2">{inv.motif}</td>
-              <td className="px-4 py-2">
-                <button className="bg-green-500 text-white px-2 py-1 rounded mr-2" onClick={() => editInvestissement(indexPremier + idx)}>Modifier</button>
-                <button className="bg-red-500 text-white px-2 py-1 rounded" onClick={() => deleteInvestissement(indexPremier + idx)}>Supprimer</button>
+          {investissementsPage.map((inv) => (
+            <tr key={inv.id} className="text-center">
+              <td className="border p-2">{inv.nom}</td>
+              <td className="border p-2">{inv.montant} €</td>
+              <td className="border p-2">{inv.date}</td>
+              <td className="border p-2">{inv.categorie}</td>
+              <td className="border p-2 flex justify-center gap-2">
+                <button onClick={() => handleEditClick(inv)} className="bg-yellow-400 px-2 py-1 rounded text-white">✏ Modifier</button>
+                <button onClick={() => handleDelete(inv.id)} className="bg-red-500 px-2 py-1 rounded text-white">🗑 Supprimer</button>
               </td>
             </tr>
           ))}
         </tbody>
       </table>
 
-      <div className="flex justify-center mt-4">
-        {[...Array(totalPages)].map((_, i) => (
-          <button key={i} onClick={() => setCurrentPage(i + 1)}
-            className={`px-3 py-1 mx-1 rounded ${currentPage === i + 1 ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
+      {/* Pagination */}
+      <div className="flex justify-center mt-4 gap-2">
+        {Array.from({ length: totalPages }, (_, idx) => (
+          <button
+            key={idx + 1}
+            onClick={() => setCurrentPage(idx + 1)}
+            className={`px-3 py-1 rounded border ${currentPage === idx + 1 ? "bg-blue-600 text-white" : "bg-gray-200"}`}
           >
-            {i + 1}
+            {idx + 1}
           </button>
         ))}
       </div>
 
-      <InvestissementEditModal
-        investissement={currentInvestissement}
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSave={handleSaveInvestissement}
-      />
+      {/* Modal d'édition */}
+      <Modal
+        isOpen={editModalOpen}
+        onRequestClose={() => setEditModalOpen(false)}
+        className="bg-white p-6 max-w-lg mx-auto mt-20 rounded shadow-lg z-50"
+        overlayClassName="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-40"
+      >
+        <h2 className="text-xl font-bold mb-4">✏️ Modifier l'investissement</h2>
+        {selectedInvestissement && (
+          <div className="grid grid-cols-2 gap-4">
+            <input
+              name="nom"
+              value={selectedInvestissement.nom}
+              onChange={(e) =>
+                setSelectedInvestissement({ ...selectedInvestissement, nom: e.target.value })
+              }
+              className="border p-2 rounded"
+            />
+            <input
+              name="montant"
+              type="number"
+              value={selectedInvestissement.montant}
+              onChange={(e) =>
+                setSelectedInvestissement({ ...selectedInvestissement, montant: e.target.value })
+              }
+              className="border p-2 rounded"
+            />
+            <input
+              name="date"
+              type="date"
+              value={selectedInvestissement.date}
+              onChange={(e) =>
+                setSelectedInvestissement({ ...selectedInvestissement, date: e.target.value })
+              }
+              className="border p-2 rounded"
+            />
+            <input
+              name="categorie"
+              value={selectedInvestissement.categorie}
+              onChange={(e) =>
+                setSelectedInvestissement({ ...selectedInvestissement, categorie: e.target.value })
+              }
+              className="border p-2 rounded"
+            />
+            <div className="col-span-2 flex justify-between mt-4">
+              <button
+                onClick={() => setEditModalOpen(false)}
+                className="bg-gray-500 text-white px-4 py-2 rounded"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleEditSave}
+                className="bg-blue-600 text-white px-4 py-2 rounded"
+              >
+                Enregistrer
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
-}
+};
 
 export default Finance;

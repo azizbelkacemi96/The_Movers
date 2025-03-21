@@ -7,6 +7,7 @@ function Navbar() {
       <NavLink to="/" className={({ isActive }) => isActive ? "text-yellow-400 font-bold" : ""}>🏠 Dashboard</NavLink>
       <NavLink to="/missions" className={({ isActive }) => isActive ? "text-yellow-400 font-bold" : ""}>📋 Missions</NavLink>
       <NavLink to="/finance" className={({ isActive }) => isActive ? "text-yellow-400 font-bold" : ""}>💰 Finance</NavLink>
+      <NavLink to="/calendar" className={({ isActive }) => isActive ? "text-yellow-400 font-bold" : ""}>📅 Calendrier</NavLink>
     </nav>
   );
 }

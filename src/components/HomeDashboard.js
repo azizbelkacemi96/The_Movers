@@ -1,76 +1,124 @@
-import React, { useEffect, useState } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import api from '../api';
+import React, { useEffect, useState } from "react";
+import api from "../api";
+import { Bar, Pie } from "react-chartjs-2";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  ArcElement,
+  Tooltip,
+  Legend,
+} from "chart.js";
 
-function HomeDashboard() {
+ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Tooltip, Legend);
+
+const HomeDashboard = () => {
   const [missions, setMissions] = useState([]);
-  const [caParMois, setCaParMois] = useState([]);
+  const [investissements, setInvestissements] = useState([]);
 
   useEffect(() => {
-    api.get('/missions')
-      .then(res => {
-        setMissions(res.data);
-        calculerCAParMois(res.data);
-      })
-      .catch(err => console.error(err));
+    api.get("/missions").then((res) => setMissions(res.data)).catch(console.error);
+    api.get("/finance").then((res) => setInvestissements(res.data)).catch(console.error);
   }, []);
 
-  const totalCA = missions.reduce((sum, m) => sum + (parseFloat(m.prixTTC) || 0), 0);
-  const totalCharges = missions.reduce((sum, m) => sum + (parseFloat(m.charges) || 0), 0);
-  const totalSalaires = missions.reduce((sum, m) => sum + (parseFloat(m.salaire) || 0), 0);
-  const benefice = totalCA - (totalCharges + totalSalaires);
+  // 📊 Statistiques missions
+  const totalMissions = missions.length;
+  const demenagements = missions.filter((m) => m.type.toLowerCase().includes("déménagement")).length;
+  const livraisons = missions.filter((m) => m.type.toLowerCase().includes("livraison")).length;
 
-  // Fonction pour regrouper le CA par mois
-  const calculerCAParMois = (missions) => {
-    let caMensuel = {};
-    missions.forEach(m => {
-      const date = new Date(m.date);
-      const mois = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`; // Format YYYY-MM
-      caMensuel[mois] = (caMensuel[mois] || 0) + (parseFloat(m.prixTTC) || 0);
-    });
+  const totalCA = missions.reduce((acc, m) => acc + (Number(m.prixTTC) || 0), 0);
+  const totalSalaires = missions.reduce((acc, m) => acc + (Number(m.salaire) || 0), 0);
+  const totalCharges = missions.reduce((acc, m) => acc + (Number(m.charges) || 0), 0);
 
-    // Transformer l'objet en tableau trié
-    const donneesTriees = Object.keys(caMensuel)
-      .sort()
-      .map(mois => ({ mois, ca: caMensuel[mois] }));
+  const totalInvestissements = investissements.reduce((acc, i) => acc + Number(i.montant), 0);
+  const investParPersonne = investissements.reduce((acc, i) => {
+    if (!i.nom) return acc;
+    acc[i.nom] = (acc[i.nom] || 0) + Number(i.montant);
+    return acc;
+  }, {});
 
-    setCaParMois(donneesTriees);
+  // 📅 CA par mois
+  const caParMois = {};
+  missions.forEach((m) => {
+    if (!m.date) return;
+    const mois = new Date(m.date).toLocaleString("fr-FR", { month: "short", year: "numeric" });
+    caParMois[mois] = (caParMois[mois] || 0) + (Number(m.prixTTC) || 0);
+  });
+
+  const graphCA = {
+    labels: Object.keys(caParMois),
+    datasets: [
+      {
+        label: "Chiffre d'affaires (€)",
+        data: Object.values(caParMois),
+        backgroundColor: "#3b82f6",
+      },
+    ],
+  };
+
+  const graphPie = {
+    labels: ["Déménagements", "Livraisons"],
+    datasets: [
+      {
+        label: "Répartition missions",
+        data: [demenagements, livraisons],
+        backgroundColor: ["#10b981", "#f59e0b"],
+      },
+    ],
   };
 
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-3xl font-bold mb-6 text-center">🏠 Dashboard de The Movers</h1>
+    <div className="p-6 space-y-8">
+      <h1 className="text-3xl font-bold mb-4">📊 Tableau de bord</h1>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div className="bg-white shadow p-4 rounded-lg">
-          <h2 className="text-xl font-semibold">💰 Chiffre d'affaires</h2>
-          <p className="text-3xl font-bold mt-2">{totalCA.toFixed(2)} €</p>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="bg-white shadow rounded p-4 border">
+          <h2 className="text-xl font-semibold mb-2">📋 Missions</h2>
+          <p>Total : {totalMissions}</p>
+          <p>🚚 Déménagements : {demenagements}</p>
+          <p>📦 Livraisons : {livraisons}</p>
         </div>
-        <div className="bg-white shadow p-4 rounded-lg">
-          <h2 className="text-xl font-semibold">📉 Charges totales</h2>
-          <p className="text-3xl font-bold mt-2">{totalCharges.toFixed(2)} €</p>
+
+        <div className="bg-white shadow rounded p-4 border">
+          <h2 className="text-xl font-semibold mb-2">💰 Chiffre d'affaires</h2>
+          <p>Total TTC : {totalCA.toFixed(2)} €</p>
         </div>
-        <div className="bg-white shadow p-4 rounded-lg">
-          <h2 className="text-xl font-semibold">📈 Bénéfice</h2>
-          <p className={`text-3xl font-bold mt-2 ${benefice >= 0 ? 'text-green-500' : 'text-red-500'}`}>{benefice.toFixed(2)} €</p>
+
+        <div className="bg-white shadow rounded p-4 border">
+          <h2 className="text-xl font-semibold mb-2">👷 Charges & Salaires</h2>
+          <p>Salaires : {totalSalaires.toFixed(2)} €</p>
+          <p>Charges : {totalCharges.toFixed(2)} €</p>
+        </div>
+
+        <div className="bg-white shadow rounded p-4 border">
+          <h2 className="text-xl font-semibold mb-2">🏦 Investissements</h2>
+          <p>Total : {totalInvestissements.toFixed(2)} €</p>
+          <ul className="mt-2">
+            {Object.entries(investParPersonne).map(([nom, montant]) => (
+              <li key={nom} className="flex justify-between text-sm">
+                <span>👤 {nom}</span>
+                <span>{montant.toFixed(2)} €</span>
+              </li>
+            ))}
+          </ul>
         </div>
       </div>
 
-      {/* 📊 Courbe d'évolution du CA par mois */}
-      <div className="bg-white shadow p-4 rounded-lg mt-6">
-        <h2 className="text-xl font-semibold text-center mb-4">📈 Évolution du CA par mois</h2>
-        <ResponsiveContainer width="100%" height={300}>
-          <LineChart data={caParMois}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="mois" />
-            <YAxis />
-            <Tooltip />
-            <Line type="monotone" dataKey="ca" stroke="#8884d8" strokeWidth={2} />
-          </LineChart>
-        </ResponsiveContainer>
+      {/* Graphiques */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="bg-white shadow rounded p-4 border">
+          <h2 className="text-lg font-semibold mb-4">📅 CA par mois</h2>
+          <Bar data={graphCA} />
+        </div>
+
+        <div className="bg-white shadow rounded p-4 border">
+          <h2 className="text-lg font-semibold mb-4">📊 Répartition des missions</h2>
+          <Pie data={graphPie} />
+        </div>
       </div>
     </div>
   );
-}
+};
 
 export default HomeDashboard;
