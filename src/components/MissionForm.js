@@ -1,43 +1,144 @@
-import React, { useState } from 'react';
-import api from '../api';
+import React, { useState } from "react";
+import api from "../api";
 
-function MissionForm({ onMissionAdded }) {
+const MissionForm = ({ onMissionAdded }) => {
   const [mission, setMission] = useState({
-    type: 'Déménagement', date: '', client: '', prixHT: '', prixTTC: '', employe: '', salaire: '', charges: ''
+    type: "Déménagement",
+    client: "",
+    adresse: "",
+    date: "",
+    prixHT: "",
+    prixTTC: "",
+    employe: "",
+    salaire: "",
+    charges: "",
   });
 
-  const handleChange = ({ target: { name, value } }) => {
-    const updatedMission = { ...mission, [name]: value };
-    if (name === 'prixHT') {
-      updatedMission.prixTTC = ((parseFloat(value) || 0) * 1.2).toFixed(2);
-    }
-    setMission(updatedMission);
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    let updated = { ...mission, [name]: value };
+
+    // ✅ Calcul TTC = HT * 1.2
+    const prixHT = parseFloat(updated.prixHT) || 0;
+    updated.prixTTC = (prixHT * 1.2).toFixed(2);
+
+    setMission(updated);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    api.post('/missions', mission).then(() => {
+    try {
+      await api.post("/missions", mission);
       onMissionAdded();
-      setMission({ type: 'Déménagement', date: '', client: '', prixHT: '', prixTTC: '', employe: '', salaire: '', charges: '' });
-    });
+      setMission({
+        type: "Déménagement",
+        client: "",
+        adresse: "",
+        date: "",
+        prixHT: "",
+        prixTTC: "",
+        employe: "",
+        salaire: "",
+        charges: "",
+      });
+    } catch (err) {
+      console.error("Erreur ajout mission:", err);
+    }
   };
 
   return (
-    <form className="grid grid-cols-2 gap-4 bg-white p-4 shadow rounded-lg" onSubmit={handleSubmit}>
-      <select name="type" value={mission.type} className="border rounded px-3 py-2" onChange={handleChange}>
-        <option>Déménagement</option>
-        <option>Livraison</option>
-      </select>
-      <input name="date" type="date" value={mission.date} className="border rounded px-3 py-2" onChange={handleChange} required />
-      <input name="client" placeholder="Client" value={mission.client} className="border rounded px-3 py-2" onChange={handleChange} required />
-      <input name="prixHT" type="number" placeholder="Prix HT (€)" value={mission.prixHT} className="border rounded px-3 py-2" onChange={handleChange} required />
-      <input name="prixTTC" type="number" placeholder="Prix TTC (€)" value={mission.prixTTC} readOnly className="border rounded px-3 py-2 bg-gray-100" />
-      <input name="employe" placeholder="Employé" value={mission.employe} className="border rounded px-3 py-2" onChange={handleChange} required />
-      <input name="salaire" type="number" placeholder="Salaire (€)" value={mission.salaire} className="border rounded px-3 py-2" onChange={handleChange} required />
-      <input name="charges" type="number" placeholder="Charges (€)" value={mission.charges} className="border rounded px-3 py-2" onChange={handleChange} required />
-      <button type="submit" className="col-span-2 bg-blue-500 hover:bg-blue-700 text-white py-2 rounded-lg">Ajouter la Mission</button>
+    <form onSubmit={handleSubmit} className="p-4 border rounded bg-white shadow mb-6">
+      <h2 className="text-lg font-bold mb-4">📝 Ajouter une mission</h2>
+
+      <div className="grid grid-cols-2 gap-4">
+        <select
+          name="type"
+          value={mission.type}
+          onChange={handleChange}
+          className="border p-2 rounded"
+        >
+          <option value="Déménagement">Déménagement</option>
+          <option value="Livraison">Livraison</option>
+        </select>
+
+        <input
+          type="text"
+          name="client"
+          value={mission.client}
+          onChange={handleChange}
+          placeholder="Nom du client"
+          className="border p-2 rounded"
+        />
+
+        <input
+          type="text"
+          name="adresse"
+          value={mission.adresse}
+          onChange={handleChange}
+          placeholder="Adresse"
+          className="border p-2 rounded"
+        />
+
+        <input
+          type="date"
+          name="date"
+          value={mission.date}
+          onChange={handleChange}
+          className="border p-2 rounded"
+        />
+
+        <input
+          type="number"
+          name="prixHT"
+          value={mission.prixHT}
+          onChange={handleChange}
+          placeholder="Prix HT (€)"
+          className="border p-2 rounded"
+        />
+
+        <input
+          type="text"
+          value={mission.prixTTC}
+          readOnly
+          placeholder="Prix TTC (€)"
+          className="border p-2 rounded bg-gray-100"
+        />
+
+        <input
+          type="text"
+          name="employe"
+          value={mission.employe}
+          onChange={handleChange}
+          placeholder="Nom de l'employé"
+          className="border p-2 rounded"
+        />
+
+        <input
+          type="number"
+          name="salaire"
+          value={mission.salaire}
+          onChange={handleChange}
+          placeholder="Salaire (€)"
+          className="border p-2 rounded"
+        />
+
+        <input
+          type="number"
+          name="charges"
+          value={mission.charges}
+          onChange={handleChange}
+          placeholder="Charges (€)"
+          className="border p-2 rounded"
+        />
+      </div>
+
+      <div className="mt-4 text-right">
+        <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded">
+          Enregistrer
+        </button>
+      </div>
     </form>
   );
-}
+};
 
 export default MissionForm;

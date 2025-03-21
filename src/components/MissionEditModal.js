@@ -1,62 +1,135 @@
-import React, { useState, useEffect } from 'react';
-import api from '../api';
+import React, { useEffect, useState } from "react";
+import Modal from "react-modal";
+import api from "../api";
 
-function MissionEditModal({ mission, isOpen, onClose, onSave }) {
-  const [form, setForm] = useState({
-    type: '',
-    date: '',
-    client: '',
-    prixHT: '',
-    prixTTC: '',
-    employe: '',
-    salaire: '',
-    charges: ''
-  });
+Modal.setAppElement("#root");
+
+const MissionEditModal = ({ isOpen, onClose, mission, onSave }) => {
+  const [form, setForm] = useState({});
 
   useEffect(() => {
-    if (mission) setForm(mission);
+    setForm(mission || {});
   }, [mission]);
 
-  const handleChange = ({ target: { name, value } }) => {
-    let updatedForm = { ...form, [name]: value };
-    if (name === 'prixHT') {
-      updatedForm.prixTTC = ((parseFloat(value) || 0) * 1.2).toFixed(2);
-    }
-    setForm(updatedForm);
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    let updated = { ...form, [name]: value };
+
+    // Calcul automatique TTC
+    const prixHT = parseFloat(updated.prixHT) || 0;
+    updated.prixTTC = (prixHT * 1.2).toFixed(2);
+
+    setForm(updated);
   };
 
-  const handleSave = () => {
-    api.put(`/missions/${form.id}`, form)
-      .then(() => onSave())
-      .catch(err => console.error(err));
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      await api.put(`/missions/${form.id}`, form);
+      onSave();
+    } catch (err) {
+      console.error("Erreur modification mission :", err);
+    }
   };
 
   if (!isOpen || !mission) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-      <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-lg">
-        <h2 className="text-xl font-bold mb-4">Modifier la Mission</h2>
-
-        <select name="type" value={form.type} className="border rounded px-3 py-2 w-full mb-2" onChange={handleChange}>
-          <option>Déménagement</option>
-          <option>Livraison</option>
+    <Modal
+      isOpen={isOpen}
+      onRequestClose={onClose}
+      contentLabel="Modifier Mission"
+      className="bg-white p-6 max-w-xl mx-auto mt-20 rounded shadow-lg relative z-50"
+      overlayClassName="fixed inset-0 bg-black bg-opacity-40 z-40 flex justify-center items-start"
+    >
+      <h2 className="text-xl font-bold mb-4">✏️ Modifier la mission</h2>
+      <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4">
+        <select name="type" value={form.type || ""} onChange={handleChange} className="border p-2 rounded">
+          <option value="Déménagement">Déménagement</option>
+          <option value="Livraison">Livraison</option>
         </select>
-        <input type="date" name="date" value={form.date} className="border rounded px-3 py-2 w-full mb-2" onChange={handleChange} />
-        <input name="client" value={form.client} placeholder="Client" className="border rounded px-3 py-2 w-full mb-2" onChange={handleChange} />
-        <input name="prixHT" type="number" value={form.prixHT} placeholder="Prix HT (€)" className="border rounded px-3 py-2 w-full mb-2" onChange={handleChange} />
-        <input name="prixTTC" type="number" value={form.prixTTC} readOnly placeholder="Prix TTC (€)" className="border rounded px-3 py-2 bg-gray-100 w-full mb-2" />
-        <input name="employe" value={form.employe} placeholder="Employé" className="border rounded px-3 py-2 w-full mb-2" onChange={handleChange} />
-        <input name="salaire" type="number" value={form.salaire} placeholder="Salaire (€)" className="border rounded px-3 py-2 w-full mb-2" onChange={handleChange} />
-        <input name="charges" type="number" value={form.charges} placeholder="Charges (€)" className="border rounded px-3 py-2 w-full mb-2" onChange={handleChange} />
 
-        <div className="mt-4 flex justify-end space-x-2">
-          <button className="bg-gray-500 text-white px-4 py-2 rounded" onClick={onClose}>Annuler</button>
-          <button className="bg-blue-500 text-white px-4 py-2 rounded" onClick={handleSave}>Enregistrer</button>
+        <input
+          type="text"
+          name="client"
+          value={form.client || ""}
+          onChange={handleChange}
+          placeholder="Client"
+          className="border p-2 rounded"
+        />
+
+        <input
+          type="text"
+          name="adresse"
+          value={form.adresse || ""}
+          onChange={handleChange}
+          placeholder="Adresse"
+          className="border p-2 rounded"
+        />
+
+        <input
+          type="date"
+          name="date"
+          value={form.date || ""}
+          onChange={handleChange}
+          className="border p-2 rounded"
+        />
+
+        <input
+          type="number"
+          name="prixHT"
+          value={form.prixHT || ""}
+          onChange={handleChange}
+          placeholder="Prix HT"
+          className="border p-2 rounded"
+        />
+
+        <input
+          type="text"
+          value={form.prixTTC || ""}
+          readOnly
+          placeholder="Prix TTC"
+          className="border p-2 rounded bg-gray-100"
+        />
+
+        <input
+          type="text"
+          name="employe"
+          value={form.employe || ""}
+          onChange={handleChange}
+          placeholder="Employé"
+          className="border p-2 rounded"
+        />
+
+        <input
+          type="number"
+          name="salaire"
+          value={form.salaire || ""}
+          onChange={handleChange}
+          placeholder="Salaire"
+          className="border p-2 rounded"
+        />
+
+        <input
+          type="number"
+          name="charges"
+          value={form.charges || ""}
+          onChange={handleChange}
+          placeholder="Charges"
+          className="border p-2 rounded"
+        />
+
+        <div className="col-span-2 flex justify-between mt-4">
+          <button type="button" onClick={onClose} className="bg-gray-500 text-white px-4 py-2 rounded">
+            Annuler
+          </button>
+          <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded">
+            Enregistrer
+          </button>
         </div>
-      </div>
-    </div>
+      </form>
+    </Modal>
   );
-}
+};
 
 export default MissionEditModal;

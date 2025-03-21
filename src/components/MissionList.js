@@ -1,68 +1,64 @@
-import React, { useState, useEffect } from 'react';
-import api from '../api';
+import React, { useState } from "react";
+import api from "../api";
 
-function MissionList({ missions, editMission, onDeleteMission }) {
+const MissionList = ({ missions, editMission, onDeleteMission }) => {
   const [currentPage, setCurrentPage] = useState(1);
-  const missionsParPage = 5;
+  const missionsPerPage = 5;
 
-  const sortedMissions = [...missions].sort((a, b) => new Date(b.date) - new Date(a.date));
-  const totalPages = Math.ceil(sortedMissions.length / missionsParPage);
+  const totalPages = Math.ceil(missions.length / missionsPerPage);
+  const indexOfLastMission = currentPage * missionsPerPage;
+  const indexOfFirstMission = indexOfLastMission - missionsPerPage;
+  const currentMissions = missions.slice(indexOfFirstMission, indexOfLastMission);
 
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [missions]);
-
-  const missionsAffichees = sortedMissions.slice((currentPage - 1) * missionsParPage, currentPage * missionsParPage);
-
-  const handleDelete = (id) => {
-    api.delete(`/missions/${id}`).then(onDeleteMission);
+  const handleDelete = async (id) => {
+    try {
+      await api.delete(`/missions/${id}`);
+      onDeleteMission(); // Rafraîchir les données
+    } catch (error) {
+      console.error("Erreur suppression mission :", error);
+    }
   };
 
-  const totalCA = missions.reduce((sum, m) => sum + parseFloat(m.prixTTC), 0);
-  const totalCharges = missions.reduce((sum, m) => sum + parseFloat(m.salaire) + parseFloat(m.charges), 0);
-  const benefice = totalCA - totalCharges;
-
   return (
-    <div>
-      {/* Partie Résultats */}
-      <div className="bg-gray-100 p-4 rounded shadow mb-4 flex justify-around text-center">
-        <div>
-          <p className="text-lg font-bold">💰 Chiffre d'affaires</p>
-          <p>{totalCA.toFixed(2)} €</p>
-        </div>
-        <div>
-          <p className="text-lg font-bold">📉 Charges totales</p>
-          <p>{totalCharges.toFixed(2)} €</p>
-        </div>
-        <div>
-          <p className="text-lg font-bold">📈 Bénéfice</p>
-          <p>{benefice.toFixed(2)} €</p>
-        </div>
-      </div>
-
-      {/* Tableau des missions */}
-      <table className="min-w-full bg-white shadow rounded-lg overflow-hidden">
-        <thead className="bg-gray-200">
-          <tr>
-            {["Type", "Date", "Client", "Prix HT (€)", "Prix TTC (€)", "Employé", "Salaire (€)", "Charges (€)", "Actions"].map(h => (
-              <th key={h} className="px-4 py-2">{h}</th>
-            ))}
+    <div className="mt-6">
+      <table className="w-full border-collapse border border-gray-300">
+        <thead>
+          <tr className="bg-gray-100">
+            <th className="border p-2">Type</th>
+            <th className="border p-2">Client</th>
+            <th className="border p-2">Adresse</th>
+            <th className="border p-2">Date</th>
+            <th className="border p-2">Prix TTC</th>
+            <th className="border p-2">Employé</th>
+            <th className="border p-2">Salaire</th>
+            <th className="border p-2">Charges</th>
+            <th className="border p-2">Actions</th>
           </tr>
         </thead>
         <tbody>
-          {missionsAffichees.map(m => (
-            <tr key={m.id} className="border-b hover:bg-gray-100 text-center">
-              <td className="px-4 py-2">{m.type}</td>
-              <td className="px-4 py-2">{m.date}</td>
-              <td className="px-4 py-2">{m.client}</td>
-              <td className="px-4 py-2">{parseFloat(m.prixHT).toFixed(2)}</td>
-              <td className="px-4 py-2">{parseFloat(m.prixTTC).toFixed(2)}</td>
-              <td className="px-4 py-2">{m.employe}</td>
-              <td className="px-4 py-2">{parseFloat(m.salaire).toFixed(2)}</td>
-              <td className="px-4 py-2">{parseFloat(m.charges).toFixed(2)}</td>
-              <td className="px-4 py-2">
-                <button className="bg-green-500 text-white px-2 rounded" onClick={() => editMission(m)}>Modifier</button>
-                <button className="bg-red-500 text-white px-2 ml-2 rounded" onClick={() => handleDelete(m.id)}>Supprimer</button>
+          {currentMissions.map((mission) => (
+            <tr key={mission.id} className="text-center">
+              <td className="border p-2">{mission.type}</td>
+              <td className="border p-2">{mission.client}</td>
+              <td className="border p-2">{mission.adresse}</td>
+              <td className="border p-2">{mission.date}</td>
+              <td className="border p-2">{mission.prixTTC} €</td>
+              <td className="border p-2">{mission.employe}</td>
+              <td className="border p-2">{mission.salaire} €</td>
+              <td className="border p-2">{mission.charges} €</td>
+              <td className="border p-2 flex flex-col gap-1 items-center justify-center">
+                <button
+                  onClick={() => editMission(mission)}
+                  className="bg-yellow-400 hover:bg-yellow-500 text-white px-2 py-1 rounded w-full"
+                >
+                  ✏ Modifier
+                </button>
+                <button
+                  onClick={() => handleDelete(mission.id)}
+                  className="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded w-full"
+                >
+                  🗑 Supprimer
+                </button>
               </td>
             </tr>
           ))}
@@ -70,18 +66,21 @@ function MissionList({ missions, editMission, onDeleteMission }) {
       </table>
 
       {/* Pagination */}
-      <div className="flex justify-center mt-4">
-        {[...Array(totalPages)].map((_, i) => (
+      <div className="mt-4 flex justify-center gap-2">
+        {Array.from({ length: totalPages }, (_, index) => (
           <button
-            key={i}
-            className={`mx-1 px-3 py-1 rounded ${currentPage === i + 1 ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
-            onClick={() => setCurrentPage(i + 1)}>
-            {i + 1}
+            key={index + 1}
+            onClick={() => setCurrentPage(index + 1)}
+            className={`px-3 py-1 border rounded ${
+              currentPage === index + 1 ? "bg-blue-600 text-white" : "bg-gray-200"
+            }`}
+          >
+            {index + 1}
           </button>
         ))}
       </div>
     </div>
   );
-}
+};
 
 export default MissionList;
