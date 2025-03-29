@@ -14,8 +14,9 @@ app.use("/public", express.static(path.join(__dirname, "public")));
 // Routes
 app.use("/appointments", require("./routes/appointmentRoutes"));
 app.use("/missions", require("./routes/missionRoutes"));
-app.use("/finance", require("./routes/financeRoutes"));
 app.use("/quote", require("./routes/quoteRoutes"));
+app.use("/investors", require("./routes/investorRoutes"));
+app.use("/transactions", require("./routes/transactionRoutes"));
 
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);

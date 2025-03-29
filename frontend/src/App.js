@@ -2,7 +2,7 @@ import React from "react";
 import { Routes, Route } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import HomeDashboard from "./components/HomeDashboard";
-import Finance from "./components/Finance";
+import InvestorPage from "./components/Investor";
 import MissionsPage from "./components/MissionsPage";
 import CalendarView from "./components/Calendar";
 import QuotePage from "./components/QuotePage";
@@ -14,7 +14,7 @@ function App() {
       <Routes>
         <Route path="/" element={<HomeDashboard />} />
         <Route path="/missions" element={<MissionsPage />} />
-        <Route path="/finance" element={<Finance />} />
+        <Route path="/investors" element={<InvestorPage />} />
         <Route path="/calendar" element={<CalendarView />} />
         <Route path="/quotes" element={<QuotePage />} />
       </Routes>

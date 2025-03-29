@@ -33,20 +33,32 @@ db.serialize(() => {
       priceTTC REAL DEFAULT 0,
       salary REAL DEFAULT 0,
       charges REAL DEFAULT 0,
-      employee TEXT DEFAULT ''
+      employee TEXT DEFAULT '',
+      profit REAL DEFAULT 0
     )
   `);
 
-  // 💰 Investments table
+
+  // 👤 Investors table
   db.run(`
-    CREATE TABLE IF NOT EXISTS investments (
+    CREATE TABLE IF NOT EXISTS investors (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT NOT NULL,
-      amount REAL NOT NULL,
-      date TEXT NOT NULL,
-      category TEXT NOT NULL
+      name TEXT NOT NULL
     )
   `);
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS investor_transactions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      investor_id INTEGER NOT NULL,
+      type TEXT NOT NULL CHECK(type IN ('deposit', 'withdrawal')),
+      amount REAL NOT NULL,
+      date TEXT NOT NULL,
+      category TEXT,
+      FOREIGN KEY(investor_id) REFERENCES investors(id)
+    )
+  `);
+
 
   // 📜 Quotes table
   db.run(`

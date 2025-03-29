@@ -40,7 +40,6 @@ def test_appointments():
             "type": "Delivery"
         }
         success &= bool(send_request("PUT", f"{BASE_URL}/appointments/{appointment_id}", update_data))
-
         success &= bool(send_request("DELETE", f"{BASE_URL}/appointments/{appointment_id}"))
 
     return success
@@ -77,37 +76,58 @@ def test_missions():
             "charges": 150.0
         }
         success &= bool(send_request("PUT", f"{BASE_URL}/missions/{mission_id}", update_data))
-
         success &= bool(send_request("DELETE", f"{BASE_URL}/missions/{mission_id}"))
 
     return success
 
-def test_finance():
-    print("\n🔹 Test CRUD Finance")
+def test_investors():
+    print("\n🔹 Test Investor Module")
     success = True
 
-    finance_data = {
-        "name": "Truck purchase",
-        "amount": 28080.0,
-        "date": "2025-03-15",
-        "category": "Vehicle"
+    # 1. Add an investor
+    investor_data = { "name": "Aziz" }
+    response = send_request("POST", f"{BASE_URL}/investors", investor_data)
+    investor_id = response.get("id") if response else None
+    success &= bool(investor_id)
+
+    # 2. Add a deposit
+    deposit_data = {
+        "investor_id": investor_id,
+        "type": "deposit",
+        "amount": 1000,
+        "date": "2025-03-29",
+        "category": "Initial"
     }
-    response = send_request("POST", f"{BASE_URL}/finance", finance_data)
-    finance_id = response.get("id") if response else None
-    success &= bool(response)
+    success &= bool(send_request("POST", f"{BASE_URL}/transactions", deposit_data))
 
-    send_request("GET", f"{BASE_URL}/finance")
+    # 3. Add a withdrawal
+    withdrawal_data = {
+        "investor_id": investor_id,
+        "type": "withdrawal",
+        "amount": 400,
+        "date": "2025-03-30",
+        "category": "Partial payout"
+    }
+    success &= bool(send_request("POST", f"{BASE_URL}/transactions", withdrawal_data))
 
-    if finance_id:
-        update_data = {
-            "name": "Equipment purchase",
-            "amount": 8080.0,
-            "date": "2025-04-01",
-            "category": "Equipment"
-        }
-        success &= bool(send_request("PUT", f"{BASE_URL}/finance/{finance_id}", update_data))
+    # 4. Check transactions
+    txs = send_request("GET", f"{BASE_URL}/investors/{investor_id}/transactions")
+    if txs is not None:
+        print(f"   🧾 Transactions: {len(txs)} found")
+        success &= len(txs) == 2
 
-        success &= bool(send_request("DELETE", f"{BASE_URL}/finance/{finance_id}"))
+    # 5. Check investor balance
+    all_investors = send_request("GET", f"{BASE_URL}/investors")
+    if all_investors:
+        investor = next((i for i in all_investors if i["id"] == investor_id), None)
+        if investor:
+            expected_balance = 600.0
+            actual_balance = investor["balance"]
+            print(f"   💰 Balance: expected €{expected_balance}, got €{actual_balance}")
+            success &= abs(actual_balance - expected_balance) < 0.01
+        else:
+            print("❌ Investor not found in list")
+            success = False
 
     return success
 
@@ -148,7 +168,6 @@ def test_quotes():
             "totalTTC": 360
         }
         success &= bool(send_request("PUT", f"{BASE_URL}/quote/{quote_id}", update_data))
-
         success &= bool(send_request("DELETE", f"{BASE_URL}/quote/{quote_id}"))
 
     return success
@@ -158,7 +177,7 @@ if __name__ == "__main__":
 
     rdv_ok = test_appointments()
     mission_ok = test_missions()
-    finance_ok = test_finance()
+    investor_ok = test_investors()
     quote_ok = test_quotes()
 
     print("\n✅ Final Report")
@@ -172,17 +191,17 @@ if __name__ == "__main__":
     else:
         print("❌ Missions tests failed")
 
-    if finance_ok:
-        print("✅ Finance tests passed")
+    if investor_ok:
+        print("✅ Investor tests passed")
     else:
-        print("❌ Finance tests failed")
+        print("❌ Investor tests failed")
 
     if quote_ok:
         print("✅ Quote tests passed")
     else:
         print("❌ Quote tests failed")
 
-    if rdv_ok and mission_ok and finance_ok and quote_ok:
+    if rdv_ok and mission_ok and investor_ok and quote_ok:
         print("\n🎉 ✅ ALL TESTS PASSED!")
     else:
         print("\n❌ Some tests failed. Please check logs.")

@@ -23,7 +23,7 @@ const Navbar = () => {
           <Link to="/" className={linkStyle("/")}>📊 Dashboard</Link>
           <Link to="/missions" className={linkStyle("/missions")}>🚚 Missions</Link>
           <Link to="/quotes" className={linkStyle("/quotes")}>🧾 Quotes</Link>
-          <Link to="/finance" className={linkStyle("/finance")}>💰 Finance</Link>
+          <Link to="/investors" className={linkStyle("/investors")}>💰 Account</Link>
           <Link to="/calendar" className={linkStyle("/calendar")}>📅 Calendar</Link>
         </div>
       </div>

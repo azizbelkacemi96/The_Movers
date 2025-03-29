@@ -15,14 +15,15 @@ exports.getAllMissions = (req, res) => {
 exports.createMission = (req, res) => {
   const { type, client, address, date, priceHT, priceTTC, salary, charges, employee } = req.body;
 
-  console.log("📥 Received data for new mission:", req.body);
+  const profit = parseFloat(priceHT || 0) - parseFloat(salary || 0) - parseFloat(charges || 0);
+  console.log("📥 Received data for new mission:", req.body, "➡️ Profit:", profit);
 
   const sql = `
-    INSERT INTO missions (type, client, address, date, priceHT, priceTTC, salary, charges, employee)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO missions (type, client, address, date, priceHT, priceTTC, salary, charges, employee, profit)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `;
 
-  db.run(sql, [type, client, address, date, priceHT, priceTTC, salary, charges, employee], function (err) {
+  db.run(sql, [type, client, address, date, priceHT, priceTTC, salary, charges, employee, profit], function (err) {
     if (err) {
       console.error("❌ Error creating mission:", err);
       return res.status(500).json({ error: "Failed to create mission" });
@@ -37,15 +38,16 @@ exports.updateMission = (req, res) => {
   const { id } = req.params;
   const { type, client, address, date, priceHT, priceTTC, salary, charges, employee } = req.body;
 
-  console.log(`🔄 Updating mission ID ${id} with data:`, req.body);
+  const profit = parseFloat(priceHT || 0) - parseFloat(salary || 0) - parseFloat(charges || 0);
+  console.log(`🔄 Updating mission ID ${id} with data:`, req.body, "➡️ New profit:", profit);
 
   const sql = `
     UPDATE missions
-    SET type = ?, client = ?, address = ?, date = ?, priceHT = ?, priceTTC = ?, salary = ?, charges = ?, employee = ?
+    SET type = ?, client = ?, address = ?, date = ?, priceHT = ?, priceTTC = ?, salary = ?, charges = ?, employee = ?, profit = ?
     WHERE id = ?
   `;
 
-  db.run(sql, [type, client, address, date, priceHT, priceTTC, salary, charges, employee, id], function (err) {
+  db.run(sql, [type, client, address, date, priceHT, priceTTC, salary, charges, employee, profit, id], function (err) {
     if (err) {
       console.error("❌ Error updating mission:", err);
       return res.status(500).json({ error: "Failed to update mission" });
