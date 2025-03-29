@@ -1,107 +1,105 @@
 const db = require("../models/database");
 
-// 📌 Récupérer tous les investissements
-exports.getAllInvestissements = (req, res) => {
-    db.all("SELECT * FROM investissements", [], (err, rows) => {
-        if (err) {
-            console.error("❌ Erreur lors de la récupération des investissements :", err);
-            return res.status(500).json({ error: "Erreur serveur." });
-        }
-        res.json(rows);
-    });
+// 🔍 Get all investments
+exports.getAllInvestments = (req, res) => {
+  db.all("SELECT * FROM investments", [], (err, rows) => {
+    if (err) {
+      console.error("❌ Error fetching investments:", err);
+      return res.status(500).json({ error: "Server error." });
+    }
+    res.json(rows);
+  });
 };
 
-// 📌 Ajouter un investissement
-exports.createInvestissement = (req, res) => {
-    const { nom, montant, date, categorie } = req.body;
+// ➕ Create a new investment
+exports.createInvestment = (req, res) => {
+  const { name, amount, date, category } = req.body;
 
-    if (!nom || !montant || !date || !categorie) {
-        return res.status(400).json({ error: "⚠️ Tous les champs obligatoires doivent être remplis." });
+  if (!name || !amount || !date || !category) {
+    return res.status(400).json({ error: "⚠️ All required fields must be filled." });
+  }
+
+  console.log("📥 Received data for new investment:", req.body);
+
+  db.run(
+    `INSERT INTO investments (name, amount, date, category) VALUES (?, ?, ?, ?)`,
+    [name, amount, date, category],
+    function (err) {
+      if (err) {
+        console.error("🚨 Error inserting investment:", err);
+        return res.status(500).json({ error: "Server error while creating investment." });
+      }
+      console.log(`✅ Investment added successfully (ID ${this.lastID})`);
+      res.json({ success: true, id: this.lastID });
+    }
+  );
+};
+
+// ✏️ Update an investment
+exports.updateInvestment = (req, res) => {
+  const { id } = req.params;
+  const { name, amount, date, category } = req.body;
+
+  if (!id) {
+    console.error("❌ Investment ID not provided.");
+    return res.status(400).json({ error: "Investment ID is required." });
+  }
+
+  db.get("SELECT * FROM investments WHERE id = ?", [id], (err, row) => {
+    if (err) {
+      console.error("🚨 Error checking investment existence:", err);
+      return res.status(500).json({ error: "Server error." });
     }
 
-    console.log("📥 Données reçues pour ajout d'investissement :", req.body);
+    if (!row) {
+      console.warn(`❌ Investment ID ${id} not found.`);
+      return res.status(404).json({ error: `Investment ID ${id} not found.` });
+    }
 
+    console.log("🔄 Updating investment with data:", req.body);
     db.run(
-        `INSERT INTO investissements (nom, montant, date, categorie) VALUES (?, ?, ?, ?)`,
-        [nom, montant, date, categorie],
-        function (err) {
-            if (err) {
-                console.error("🚨 Erreur lors de l'ajout de l'investissement :", err);
-                return res.status(500).json({ error: "Erreur serveur lors de l'ajout de l'investissement." });
-            }
-            console.log(`✅ Investissement ajouté avec succès (ID ${this.lastID})`);
-            res.json({ success: true, id: this.lastID });
+      `UPDATE investments SET name = ?, amount = ?, date = ?, category = ? WHERE id = ?`,
+      [name, amount, date, category, id],
+      function (err) {
+        if (err) {
+          console.error("🚨 Error updating investment:", err);
+          return res.status(500).json({ error: "Server error while updating investment." });
         }
+
+        console.log(`✅ Investment ID ${id} updated successfully`);
+        res.json({ success: true, message: `Investment ID ${id} updated.` });
+      }
     );
+  });
 };
 
-// 📌 Modifier un investissement (Vérification de l'ID avant mise à jour)
-exports.updateInvestissement = (req, res) => {
-    const { nom, montant, date, categorie } = req.body;
-    const { id } = req.params;
+// ❌ Delete an investment
+exports.deleteInvestment = (req, res) => {
+  const { id } = req.params;
 
-    if (!id) {
-        console.error("❌ ID d'investissement non fourni.");
-        return res.status(400).json({ error: "❌ ID d'investissement non fourni." });
+  if (!id) {
+    return res.status(400).json({ error: "Investment ID is required." });
+  }
+
+  db.get("SELECT * FROM investments WHERE id = ?", [id], (err, row) => {
+    if (err) {
+      console.error("🚨 Error checking investment existence:", err);
+      return res.status(500).json({ error: "Server error." });
     }
 
-    // Vérifier si l'ID existe avant modification
-    db.get("SELECT * FROM investissements WHERE id = ?", [id], (err, row) => {
-        if (err) {
-            console.error("🚨 Erreur lors de la vérification de l'investissement :", err);
-            return res.status(500).json({ error: "Erreur serveur." });
-        }
-        if (!row) {
-            console.warn(`❌ Avertissement : L'investissement ID ${id} n'existe pas.`);
-            return res.status(404).json({ error: `❌ Investissement ID ${id} introuvable.` });
-        }
-
-        // L'investissement existe, on peut le modifier
-        console.log("📥 Données reçues pour modification d'investissement :", req.body);
-        db.run(
-            `UPDATE investissements SET nom = ?, montant = ?, date = ?, categorie = ? WHERE id = ?`,
-            [nom, montant, date, categorie, id],
-            function (err) {
-                if (err) {
-                    console.error("🚨 Erreur lors de la mise à jour de l'investissement :", err);
-                    return res.status(500).json({ error: "Erreur serveur lors de la modification de l'investissement." });
-                }
-
-                console.log(`✅ Investissement ID ${id} mis à jour avec succès`);
-                res.json({ success: true, message: `✅ Investissement ID ${id} mis à jour avec succès.` });
-            }
-        );
-    });
-};
-
-// 📌 Supprimer un investissement (Vérification de l'ID avant suppression)
-exports.deleteInvestissement = (req, res) => {
-    const { id } = req.params;
-
-    if (!id) {
-        return res.status(400).json({ error: "❌ ID d'investissement non fourni." });
+    if (!row) {
+      console.warn(`❌ Investment ID ${id} not found.`);
+      return res.status(404).json({ error: `Investment ID ${id} not found.` });
     }
 
-    // Vérifier si l'ID existe avant suppression
-    db.get("SELECT * FROM investissements WHERE id = ?", [id], (err, row) => {
-        if (err) {
-            console.error("🚨 Erreur lors de la vérification de l'investissement :", err);
-            return res.status(500).json({ error: "Erreur serveur." });
-        }
-        if (!row) {
-            console.warn(`❌ Avertissement : L'investissement ID ${id} n'existe pas.`);
-            return res.status(404).json({ error: `❌ Investissement ID ${id} introuvable.` });
-        }
+    db.run("DELETE FROM investments WHERE id = ?", id, function (err) {
+      if (err) {
+        console.error("🚨 Error deleting investment:", err);
+        return res.status(500).json({ error: "Server error while deleting investment." });
+      }
 
-        // L'investissement existe, on peut le supprimer
-        db.run("DELETE FROM investissements WHERE id = ?", id, function (err) {
-            if (err) {
-                console.error("🚨 Erreur lors de la suppression :", err);
-                return res.status(500).json({ error: "Erreur serveur." });
-            }
-
-            console.log(`✅ Investissement ID ${id} supprimé avec succès`);
-            res.json({ success: true, message: `✅ Investissement ID ${id} supprimé avec succès.` });
-        });
+      console.log(`🗑️ Investment ID ${id} deleted successfully`);
+      res.json({ success: true, message: `Investment ID ${id} deleted.` });
     });
+  });
 };

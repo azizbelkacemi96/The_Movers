@@ -1,142 +1,72 @@
 import React, { useState } from "react";
 import api from "../api";
+import { toast } from "react-toastify";
 
-const MissionForm = ({ onMissionAdded }) => {
-  const [mission, setMission] = useState({
-    type: "Déménagement",
-    client: "",
-    adresse: "",
+const MissionForm = ({ onCreated }) => {
+  const [form, setForm] = useState({
+    type: "Moving",
     date: "",
-    prixHT: "",
-    prixTTC: "",
-    employe: "",
-    salaire: "",
+    client: "",
+    address: "",
+    priceHT: "",
+    employee: "",
+    salary: "",
     charges: "",
   });
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    let updated = { ...mission, [name]: value };
-
-    // ✅ Calcul TTC = HT * 1.2
-    const prixHT = parseFloat(updated.prixHT) || 0;
-    updated.prixTTC = (prixHT * 1.2).toFixed(2);
-
-    setMission(updated);
+    setForm({ ...form, [name]: value });
   };
+
+  const calculateTTC = (ht) => (parseFloat(ht || 0) * 1.2).toFixed(2);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await api.post("/missions", mission);
-      onMissionAdded();
-      setMission({
-        type: "Déménagement",
-        client: "",
-        adresse: "",
+      const payload = {
+        ...form,
+        priceHT: parseFloat(form.priceHT),
+        priceTTC: parseFloat(calculateTTC(form.priceHT)),
+        salary: parseFloat(form.salary),
+        charges: parseFloat(form.charges),
+      };
+
+      await api.post("/missions", payload);
+      toast.success("✅ Mission created");
+      onCreated();
+      setForm({
+        type: "Moving",
         date: "",
-        prixHT: "",
-        prixTTC: "",
-        employe: "",
-        salaire: "",
+        client: "",
+        address: "",
+        priceHT: "",
+        employee: "",
+        salary: "",
         charges: "",
       });
-    } catch (err) {
-      console.error("Erreur ajout mission:", err);
+    } catch {
+      toast.error("❌ Failed to create mission");
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="p-4 border rounded bg-white shadow mb-6">
-      <h2 className="text-lg font-bold mb-4">📝 Ajouter une mission</h2>
-
-      <div className="grid grid-cols-2 gap-4">
-        <select
-          name="type"
-          value={mission.type}
-          onChange={handleChange}
-          className="border p-2 rounded"
-        >
-          <option value="Déménagement">Déménagement</option>
-          <option value="Livraison">Livraison</option>
-        </select>
-
-        <input
-          type="text"
-          name="client"
-          value={mission.client}
-          onChange={handleChange}
-          placeholder="Nom du client"
-          className="border p-2 rounded"
-        />
-
-        <input
-          type="text"
-          name="adresse"
-          value={mission.adresse}
-          onChange={handleChange}
-          placeholder="Adresse"
-          className="border p-2 rounded"
-        />
-
-        <input
-          type="date"
-          name="date"
-          value={mission.date}
-          onChange={handleChange}
-          className="border p-2 rounded"
-        />
-
-        <input
-          type="number"
-          name="prixHT"
-          value={mission.prixHT}
-          onChange={handleChange}
-          placeholder="Prix HT (€)"
-          className="border p-2 rounded"
-        />
-
-        <input
-          type="text"
-          value={mission.prixTTC}
-          readOnly
-          placeholder="Prix TTC (€)"
-          className="border p-2 rounded bg-gray-100"
-        />
-
-        <input
-          type="text"
-          name="employe"
-          value={mission.employe}
-          onChange={handleChange}
-          placeholder="Nom de l'employé"
-          className="border p-2 rounded"
-        />
-
-        <input
-          type="number"
-          name="salaire"
-          value={mission.salaire}
-          onChange={handleChange}
-          placeholder="Salaire (€)"
-          className="border p-2 rounded"
-        />
-
-        <input
-          type="number"
-          name="charges"
-          value={mission.charges}
-          onChange={handleChange}
-          placeholder="Charges (€)"
-          className="border p-2 rounded"
-        />
+    <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-gray-100 p-4 rounded">
+      <select name="type" value={form.type} onChange={handleChange} className="p-2 border rounded">
+        <option value="Moving">🚚 Moving</option>
+        <option value="Delivery">📦 Delivery</option>
+      </select>
+      <input name="date" type="date" value={form.date} onChange={handleChange} className="p-2 border rounded" />
+      <input name="client" placeholder="👤 Client" value={form.client} onChange={handleChange} className="p-2 border rounded" />
+      <input name="address" placeholder="📍 Address" value={form.address} onChange={handleChange} className="p-2 border rounded" />
+      <input name="priceHT" placeholder="💰 Price HT" type="number" value={form.priceHT} onChange={handleChange} className="p-2 border rounded" />
+      <input name="employee" placeholder="👷 Employee" value={form.employee} onChange={handleChange} className="p-2 border rounded" />
+      <input name="salary" placeholder="💸 Salary" type="number" value={form.salary} onChange={handleChange} className="p-2 border rounded" />
+      <input name="charges" placeholder="📉 Charges" type="number" value={form.charges} onChange={handleChange} className="p-2 border rounded" />
+      <div className="col-span-full text-right font-semibold">
+        🧾 TTC: {calculateTTC(form.priceHT)} €
       </div>
-
-      <div className="mt-4 text-right">
-        <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded">
-          Enregistrer
-        </button>
-      </div>
+      <button type="submit" className="bg-green-600 text-white px-4 py-2 rounded col-span-full">💾 Save</button>
     </form>
   );
 };

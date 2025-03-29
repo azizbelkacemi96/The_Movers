@@ -1,26 +1,25 @@
 import React, { useEffect, useState } from "react";
-import MissionForm from "./MissionForm";
-import MissionFilter from "./MissionFilter";
-import MissionList from "./MissionList";
-import MissionEditModal from "./MissionEditModal";
-import * as XLSX from "xlsx";
 import api from "../api";
+import MissionForm from "./MissionForm";
+import MissionList from "./MissionList";
+import MissionFilter from "./MissionFilter";
+import MissionEditModal from "./MissionEditModal";
+import { toast } from "react-toastify";
 
 const MissionsPage = () => {
   const [missions, setMissions] = useState([]);
-  const [missionsFiltrees, setMissionsFiltrees] = useState([]);
-  const [currentMission, setCurrentMission] = useState(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [filteredMissions, setFilteredMissions] = useState([]);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [selectedMission, setSelectedMission] = useState(null);
 
-  // 📥 Récupération des missions depuis l'API
   const fetchMissions = async () => {
     try {
       const res = await api.get("/missions");
-      const sorted = res.data.sort((a, b) => new Date(b.date) - new Date(a.date));
-      setMissions(sorted);
-      setMissionsFiltrees(sorted);
+      setMissions(res.data);
+      setFilteredMissions(res.data);
     } catch (err) {
-      console.error("Erreur récupération missions :", err);
+      console.error("❌ Error fetching missions:", err);
+      toast.error("Failed to fetch missions.");
     }
   };
 
@@ -28,48 +27,62 @@ const MissionsPage = () => {
     fetchMissions();
   }, []);
 
-  const handleEditMission = (mission) => {
-    setCurrentMission(mission);
-    setIsModalOpen(true);
-  };
-
-  const handleSaveEdit = () => {
-    setIsModalOpen(false);
+  const handleCreate = () => {
     fetchMissions();
   };
 
-  const exportToExcel = () => {
-    const ws = XLSX.utils.json_to_sheet(missionsFiltrees);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Missions");
-    XLSX.writeFile(wb, "missions.xlsx");
+  const handleDelete = async (id) => {
+    try {
+      await api.delete(`/missions/${id}`);
+      toast.success("Mission deleted.");
+      fetchMissions();
+    } catch (err) {
+      console.error("❌ Error deleting mission:", err);
+      toast.error("Failed to delete mission.");
+    }
+  };
+
+  const handleEdit = (mission) => {
+    setSelectedMission(mission);
+    setEditModalOpen(true);
+  };
+
+  const handleEditSave = async (updated) => {
+    try {
+      const ttc = parseFloat(updated.priceHT || 0) * 1.2;
+      const payload = { ...updated, priceTTC: ttc };
+
+      await api.put(`/missions/${updated.id}`, payload);
+      toast.success("Mission updated.");
+      setEditModalOpen(false);
+      fetchMissions();
+    } catch (err) {
+      console.error("❌ Error updating mission:", err);
+      toast.error("Failed to update mission.");
+    }
+  };
+
+  const handleFilter = (filtered) => {
+    setFilteredMissions(filtered);
   };
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold mb-4">📋 Liste des missions</h1>
+    <div className="p-6 max-w-7xl mx-auto">
+      <h1 className="text-3xl font-bold mb-6">🚚 Mission Management</h1>
 
-      <MissionForm onMissionAdded={fetchMissions} />
+      <MissionForm onCreated={handleCreate} />
 
-      <MissionFilter missions={missions} onFilter={setMissionsFiltrees} />
+      <hr className="my-6" />
 
-      <div className="my-4 text-right">
-        <button onClick={exportToExcel} className="bg-green-600 text-white px-4 py-2 rounded">
-          📤 Exporter en Excel
-        </button>
-      </div>
+      <MissionFilter missions={missions} onFilter={handleFilter} />
 
-      <MissionList
-        missions={missionsFiltrees}
-        editMission={handleEditMission}
-        onDeleteMission={fetchMissions}
-      />
+      <MissionList missions={filteredMissions} onDelete={handleDelete} onEdit={handleEdit} />
 
       <MissionEditModal
-        mission={currentMission}
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSave={handleSaveEdit}
+        isOpen={editModalOpen}
+        mission={selectedMission}
+        onClose={() => setEditModalOpen(false)}
+        onSave={handleEditSave}
       />
     </div>
   );

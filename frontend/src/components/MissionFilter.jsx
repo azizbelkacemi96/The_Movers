@@ -1,79 +1,75 @@
-import React, { useState, useEffect } from "react";
+import React, { useMemo, useState } from "react";
 
 const MissionFilter = ({ missions, onFilter }) => {
-  const [type, setType] = useState("");
-  const [client, setClient] = useState("");
-  const [employe, setEmploye] = useState("");
-  const [dateDebut, setDateDebut] = useState("");
-  const [dateFin, setDateFin] = useState("");
+  const [filters, setFilters] = useState({
+    type: "",
+    client: "",
+    employee: "",
+    startDate: "",
+    endDate: ""
+  });
 
-  const uniqueClients = [...new Set(missions.map(m => m.client).filter(Boolean))];
-  const uniqueEmployes = [...new Set(missions.map(m => m.employe).filter(Boolean))];
+  // 🧠 Mémorisation unique des clients et employés
+  const uniqueClients = useMemo(() => [...new Set(missions.map(m => m.client).filter(Boolean))], [missions]);
+  const uniqueEmployees = useMemo(() => [...new Set(missions.map(m => m.employee).filter(Boolean))], [missions]);
 
-  useEffect(() => {
-    let result = missions;
-
-    if (type) result = result.filter(m => m.type === type);
-    if (client) result = result.filter(m => m.client === client);
-    if (employe) result = result.filter(m => m.employe === employe);
-    if (dateDebut) result = result.filter(m => new Date(m.date) >= new Date(dateDebut));
-    if (dateFin) result = result.filter(m => new Date(m.date) <= new Date(dateFin));
-
-    onFilter(result);
-  }, [type, client, employe, dateDebut, dateFin, missions, onFilter]);
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    const updatedFilters = { ...filters, [name]: value };
+    setFilters(updatedFilters);
+    applyFilters(updatedFilters);
+  };
 
   const resetFilters = () => {
-    setType("");
-    setClient("");
-    setEmploye("");
-    setDateDebut("");
-    setDateFin("");
+    const reset = {
+      type: "",
+      client: "",
+      employee: "",
+      startDate: "",
+      endDate: ""
+    };
+    setFilters(reset);
+    applyFilters(reset);
+  };
+
+  const applyFilters = (filterSet) => {
+    const filtered = missions.filter((m) => {
+      const typeMatch = filterSet.type ? m.type === filterSet.type : true;
+      const clientMatch = filterSet.client ? m.client === filterSet.client : true;
+      const employeeMatch = filterSet.employee ? m.employee === filterSet.employee : true;
+
+      const date = new Date(m.date);
+      const startMatch = filterSet.startDate ? date >= new Date(filterSet.startDate) : true;
+      const endMatch = filterSet.endDate ? date <= new Date(filterSet.endDate) : true;
+
+      return typeMatch && clientMatch && employeeMatch && startMatch && endMatch;
+    });
+
+    onFilter(filtered);
   };
 
   return (
-    <div className="bg-gray-100 p-4 rounded shadow mb-6">
-      <h3 className="text-md font-semibold mb-3">🔍 Filtres</h3>
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        <select value={type} onChange={(e) => setType(e.target.value)} className="border p-2 rounded">
-          <option value="">📦 Tous les types</option>
-          <option value="Déménagement">Déménagement</option>
-          <option value="Livraison">Livraison</option>
-        </select>
+    <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-6">
+      <select name="type" value={filters.type} onChange={handleChange} className="p-2 border rounded">
+        <option value="">All Types</option>
+        <option value="Moving">🚚 Moving</option>
+        <option value="Delivery">📦 Delivery</option>
+      </select>
 
-        <select value={client} onChange={(e) => setClient(e.target.value)} className="border p-2 rounded">
-          <option value="">👤 Tous les clients</option>
-          {uniqueClients.map((c, idx) => (
-            <option key={idx} value={c}>{c}</option>
-          ))}
-        </select>
+      <select name="client" value={filters.client} onChange={handleChange} className="p-2 border rounded">
+        <option value="">All Clients</option>
+        {uniqueClients.map((c) => <option key={c}>{c}</option>)}
+      </select>
 
-        <select value={employe} onChange={(e) => setEmploye(e.target.value)} className="border p-2 rounded">
-          <option value="">🧑 Tous les employés</option>
-          {uniqueEmployes.map((e, idx) => (
-            <option key={idx} value={e}>{e}</option>
-          ))}
-        </select>
+      <select name="employee" value={filters.employee} onChange={handleChange} className="p-2 border rounded">
+        <option value="">All Employees</option>
+        {uniqueEmployees.map((e) => <option key={e}>{e}</option>)}
+      </select>
 
-        <input
-          type="date"
-          value={dateDebut}
-          onChange={(e) => setDateDebut(e.target.value)}
-          className="border p-2 rounded"
-        />
+      <input type="date" name="startDate" value={filters.startDate} onChange={handleChange} className="p-2 border rounded" />
+      <input type="date" name="endDate" value={filters.endDate} onChange={handleChange} className="p-2 border rounded" />
 
-        <input
-          type="date"
-          value={dateFin}
-          onChange={(e) => setDateFin(e.target.value)}
-          className="border p-2 rounded"
-        />
-      </div>
-
-      <div className="text-right mt-4">
-        <button onClick={resetFilters} className="bg-gray-400 text-white px-4 py-2 rounded">
-          ♻️ Réinitialiser
-        </button>
-      </div>
+      <button onClick={resetFilters} className="bg-gray-200 px-4 py-2 rounded">♻️ Reset</button>
     </div>
   );
 };

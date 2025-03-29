@@ -5,9 +5,8 @@ import HomeDashboard from "./components/HomeDashboard";
 import Finance from "./components/Finance";
 import MissionsPage from "./components/MissionsPage";
 import CalendarView from "./components/Calendar";
-import DevisPage from "./components/DevisPage";
+import QuotePage from "./components/QuotePage";
 
-console.log("MissionsPage:", MissionsPage);
 function App() {
   return (
     <div className="container mx-auto p-4">
@@ -17,7 +16,7 @@ function App() {
         <Route path="/missions" element={<MissionsPage />} />
         <Route path="/finance" element={<Finance />} />
         <Route path="/calendar" element={<CalendarView />} />
-        <Route path="/devis" element={<DevisPage />} />
+        <Route path="/quotes" element={<QuotePage />} />
       </Routes>
     </div>
   );

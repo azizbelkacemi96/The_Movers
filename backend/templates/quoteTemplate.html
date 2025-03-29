@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Devis</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      color: #000;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .wave-container, .footer-wave-container {
+      width: 100%;
+    }
+
+    .wave, .footer-wave {
+      width: 100%;
+      height: 100px;
+    }
+
+    .header {
+      padding: 30px 40px 0;
+    }
+
+    .top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .logo {
+      width: 160px;
+    }
+
+    .infos-droite {
+      text-align: right;
+      font-size: 13px;
+    }
+
+    .title {
+      text-align: center;
+      font-size: 36px;
+      font-weight: bold;
+      margin: 20px 0 10px;
+      color: #33BBFF;
+    }
+
+    .address-blocks {
+      display: flex;
+      justify-content: space-between;
+      margin: 20px 0;
+      gap: 20px;
+    }
+
+    .address {
+      border: 2px solid #33BBFF;
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-size: 14px;
+      font-weight: bold;
+      width: 100%;
+    }
+
+    .address strong {
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    .body {
+      padding: 0 40px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      font-size: 14px;
+    }
+
+    table thead {
+      background-color: #e6f7ff;
+    }
+
+    th, td {
+      padding: 10px;
+      border-bottom: 1px solid #33BBFF;
+    }
+
+    .totals {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 30px;
+      gap: 20px;
+    }
+
+    .summary {
+      text-align: right;
+      font-weight: bold;
+      font-size: 14px;
+      flex: 1;
+    }
+
+    .summary div {
+      margin: 5px 0;
+    }
+
+    .payment-info {
+      flex: 1;
+      font-size: 13px;
+    }
+
+    .payment-info em {
+      font-weight: bold;
+    }
+
+    .footer {
+      font-size: 11px;
+      color: #333;
+      padding: 10px 40px;
+    }
+
+    svg text {
+      font-family: Arial, sans-serif;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 🌊 Vague supérieure -->
+  <div class="wave-container">
+    <svg viewBox="0 0 1440 120" class="wave" xmlns="http://www.w3.org/2000/svg">
+      <path fill="#33BBFF" d="M0,80 C400,160 1000,20 1440,100 L1440,0 L0,0 Z"></path>
+    </svg>
+  </div>
+
+  <div class="container">
+    <div>
+      <!-- 📄 En-tête -->
+      <div class="header">
+        <div class="top">
+          <img src="{{logoPath}}" alt="Logo" class="logo" />
+          <div class="infos-droite">
+            DATE : {{date}}<br />
+            Devis N° : <strong>{{quote_id}}</strong>
+          </div>
+        </div>
+
+        <h1 class="title">DEVIS</h1>
+
+        <div class="address-blocks">
+          <div class="address">
+            <strong>{{company.name}}s</strong>
+            <p>{{company.email}}</p>
+            <p>{{company.phone}}</p>
+            <p>{{company.address}}</p>
+            <p>{{company.city}}</p>
+            <p>{{company.zip}}</p>
+          </div>
+          <div class="address" style="text-align: right;">
+            <strong>DESTINATAIRE :</strong>
+            {{client_nom}}<br />
+            {{client_adresse}}<br />
+            {{client_ville}}
+          </div>
+        </div>
+      </div>
+
+      <!-- 💼 Prestations -->
+      <div class="body">
+        <table>
+          <thead>
+            <tr>
+              <th>Description</th>
+              <th>Prix Unitaire</th>
+              <th>Quantité</th>
+              <th>Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{#each prestations}}
+            <tr>
+              <td>{{description}}</td>
+              <td>{{prix}} €</td>
+              <td>{{quantite}}</td>
+              <td>{{total}} €</td>
+            </tr>
+            {{/each}}
+          </tbody>
+        </table>
+
+        <div class="totals">
+          <div class="payment-info">
+            <strong>Conditions de règlement à réception de facture</strong><br /><br />
+            Escompte pour paiement anticipé : non<br />
+            Mode de règlement : chèque ou virement<br />
+          </div>
+          <div class="summary">
+            <div>Sous-total HT : {{totalHT}} €</div>
+            <div>TVA : {{totalTVA}} €</div>
+            <div>Total TTC : <strong>{{totalTTC}} €</strong></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 🌊 Vague inférieure fixée en bas -->
+    <div>
+      <div class="footer-wave-container">
+        <svg viewBox="0 0 1440 120" class="footer-wave" xmlns="http://www.w3.org/2000/svg">
+          <path fill="#33BBFF" d="M0,0 C400,100 1000,20 1440,100 L1440,120 L0,120 Z"></path>
+          <text x="50%" y="60%" dominant-baseline="middle" text-anchor="middle" fill="#000">
+            www.themovers.fr
+          </text>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

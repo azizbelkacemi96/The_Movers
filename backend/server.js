@@ -1,27 +1,22 @@
 const express = require("express");
 const cors = require("cors");
-const db = require("./models/database");
 const path = require("path");
+const db = require("./models/database");
 
 const app = express();
-app.use(express.json());
-app.use(cors());
+const PORT = 8080;
 
-// 📌 Servir les fichiers statiques (logos, PDF de devis, etc.)
+// Middleware
+app.use(cors());
+app.use(express.json());
 app.use("/public", express.static(path.join(__dirname, "public")));
 
-// 📌 Importer les routes
-const rdvRoutes = require("./routes/rdvRoutes");
-const missionRoutes = require("./routes/missionRoutes");
-const financeRoutes = require("./routes/financeRoutes");
-const devisRoutes = require("./routes/devisRoutes");
+// Routes
+app.use("/appointments", require("./routes/appointmentRoutes"));
+app.use("/missions", require("./routes/missionRoutes"));
+app.use("/finance", require("./routes/financeRoutes"));
+app.use("/quote", require("./routes/quoteRoutes"));
 
-
-app.use("/rdvs", rdvRoutes);
-app.use("/missions", missionRoutes);
-app.use("/finance", financeRoutes);
-app.use("/devis", devisRoutes);
-
-// 📌 Démarrer le serveur
-const PORT = 5000;
-app.listen(PORT, () => console.log(`🚀 Serveur en écoute sur http://localhost:${PORT}`));
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on http://localhost:${PORT}`);
+});

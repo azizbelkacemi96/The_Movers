@@ -1,75 +1,72 @@
 const db = require("../models/database");
 
-// 📌 Récupérer toutes les missions
+// GET all missions
 exports.getAllMissions = (req, res) => {
-    db.all("SELECT * FROM missions", [], (err, rows) => {
-        if (err) {
-            console.error("❌ Erreur lors de la récupération des missions :", err);
-            return res.status(500).json({ error: "Erreur serveur." });
-        }
-        res.json(rows);
-    });
+  db.all("SELECT * FROM missions", [], (err, rows) => {
+    if (err) {
+      console.error("❌ Error fetching missions:", err);
+      return res.status(500).json({ error: "Server error" });
+    }
+    res.json(rows);
+  });
 };
 
-// 📌 Ajouter une mission
+// CREATE a mission
 exports.createMission = (req, res) => {
-    const { type, client, adresse, date, prixHT, prixTTC, salaire, charges, employe } = req.body;
+  const { type, client, address, date, priceHT, priceTTC, salary, charges, employee } = req.body;
 
-    if (!type || !client || !date) {
-        return res.status(400).json({ error: "⚠️ Tous les champs obligatoires doivent être remplis." });
+  console.log("📥 Received data for new mission:", req.body);
+
+  const sql = `
+    INSERT INTO missions (type, client, address, date, priceHT, priceTTC, salary, charges, employee)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `;
+
+  db.run(sql, [type, client, address, date, priceHT, priceTTC, salary, charges, employee], function (err) {
+    if (err) {
+      console.error("❌ Error creating mission:", err);
+      return res.status(500).json({ error: "Failed to create mission" });
     }
-
-    console.log("📥 Données reçues pour ajout mission :", req.body);
-
-    db.run(
-        `INSERT INTO missions (type, client, adresse, date, prixHT, prixTTC, salaire, charges, employe) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [type, client, adresse || "", date, prixHT || 0, prixTTC || 0, salaire || 0, charges || 0, employe || ""],
-        function (err) {
-            if (err) {
-                console.error("🚨 Erreur lors de l'ajout de la mission :", err);
-                return res.status(500).json({ error: "Erreur serveur." });
-            }
-            res.json({ success: true, id: this.lastID });
-        }
-    );
+    console.log(`✅ Mission created successfully (ID ${this.lastID})`);
+    res.json({ success: true, id: this.lastID });
+  });
 };
 
-// 📌 Modifier une mission
+// UPDATE a mission
 exports.updateMission = (req, res) => {
-    const { type, client, adresse, date, prixHT, prixTTC, salaire, charges, employe } = req.body;
-    const { id } = req.params;
+  const { id } = req.params;
+  const { type, client, address, date, priceHT, priceTTC, salary, charges, employee } = req.body;
 
-    if (!id) {
-        return res.status(400).json({ error: "❌ ID de mission non fourni." });
+  console.log(`🔄 Updating mission ID ${id} with data:`, req.body);
+
+  const sql = `
+    UPDATE missions
+    SET type = ?, client = ?, address = ?, date = ?, priceHT = ?, priceTTC = ?, salary = ?, charges = ?, employee = ?
+    WHERE id = ?
+  `;
+
+  db.run(sql, [type, client, address, date, priceHT, priceTTC, salary, charges, employee, id], function (err) {
+    if (err) {
+      console.error("❌ Error updating mission:", err);
+      return res.status(500).json({ error: "Failed to update mission" });
     }
-
-    db.run(
-        `UPDATE missions SET type = ?, client = ?, adresse = ?, date = ?, prixHT = ?, prixTTC = ?, salaire = ?, charges = ?, employe = ? WHERE id = ?`,
-        [type, client, adresse || "", date, prixHT || 0, prixTTC || 0, salaire || 0, charges || 0, employe || "", id],
-        function (err) {
-            if (err) {
-                console.error("🚨 Erreur lors de la mise à jour :", err);
-                return res.status(500).json({ error: "Erreur serveur." });
-            }
-            res.json({ success: true, message: `✅ Mission ID ${id} mise à jour avec succès.` });
-        }
-    );
+    console.log(`✅ Mission ID ${id} updated successfully`);
+    res.json({ success: true });
+  });
 };
 
-// 📌 Supprimer une mission
+// DELETE a mission
 exports.deleteMission = (req, res) => {
-    const { id } = req.params;
+  const { id } = req.params;
 
-    if (!id) {
-        return res.status(400).json({ error: "❌ ID de mission non fourni." });
+  console.log(`🗑️ Deleting mission ID ${id}`);
+
+  db.run("DELETE FROM missions WHERE id = ?", [id], function (err) {
+    if (err) {
+      console.error("❌ Error deleting mission:", err);
+      return res.status(500).json({ error: "Failed to delete mission" });
     }
-
-    db.run("DELETE FROM missions WHERE id = ?", id, function (err) {
-        if (err) {
-            console.error("🚨 Erreur lors de la suppression :", err);
-            return res.status(500).json({ error: "Erreur serveur." });
-        }
-        res.json({ success: true, message: `✅ Mission ID ${id} supprimée avec succès.` });
-    });
+    console.log(`✅ Mission ID ${id} deleted`);
+    res.json({ success: true });
+  });
 };

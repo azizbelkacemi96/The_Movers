@@ -1,52 +1,47 @@
 import requests
 
-BASE_URL = "http://localhost:5000"
+BASE_URL = "http://localhost:8080"
 
 def send_request(method, url, json=None):
-    """ Envoie une requête HTTP et gère les erreurs proprement """
     try:
         response = requests.request(method, url, json=json)
         response.raise_for_status()
         return response.json()
     except requests.exceptions.RequestException as e:
-        print(f"❌ ERREUR lors de {method} {url} - {e}")
+        print(f"❌ ERROR during {method} {url} - {e}")
         return None
     except requests.exceptions.JSONDecodeError:
-        print(f"❌ ERREUR: Le serveur a renvoyé une réponse vide pour {method} {url}")
+        print(f"❌ ERROR: Server returned empty response for {method} {url}")
         return None
 
-def test_rdvs():
-    print("\n🔹 Test CRUD RDVs")
+def test_appointments():
+    print("\n🔹 Test CRUD Appointments")
     success = True
 
-    # CREATE (Ajout d'un RDV de livraison/déménagement)
-    rdv_data = {
-        "client": "Société ABC",
-        "telephone": "0601020304",
-        "adresse": "23 Rue Lafayette, Paris",
+    appointment_data = {
+        "client": "Company ABC",
+        "phone": "0601020304",
+        "address": "23 Rue Lafayette, Paris",
         "date": "2025-04-10T09:30",
-        "type": "Déménagement"
+        "type": "Moving"
     }
-    response = send_request("POST", f"{BASE_URL}/rdvs", rdv_data)
-    rdv_id = response.get("id") if response else None
+    response = send_request("POST", f"{BASE_URL}/appointments", appointment_data)
+    appointment_id = response.get("id") if response else None
     success &= bool(response)
 
-    send_request("GET", f"{BASE_URL}/rdvs")
+    send_request("GET", f"{BASE_URL}/appointments")
 
-    # UPDATE (Modifier un RDV)
-    if rdv_id:
+    if appointment_id:
         update_data = {
-            "client": "Entreprise XYZ",
-            "telephone": "0612345678",
-            "adresse": "125 Avenue des Champs-Élysées, Paris",
+            "client": "Company XYZ",
+            "phone": "0612345678",
+            "address": "125 Avenue des Champs-Élysées, Paris",
             "date": "2025-04-12T14:00",
-            "type": "Livraison"
+            "type": "Delivery"
         }
-        success &= bool(send_request("PUT", f"{BASE_URL}/rdvs/{rdv_id}", update_data))
+        success &= bool(send_request("PUT", f"{BASE_URL}/appointments/{appointment_id}", update_data))
 
-    # DELETE (Supprimer un RDV)
-    if rdv_id:
-        success &= bool(send_request("DELETE", f"{BASE_URL}/rdvs/{rdv_id}"))
+        success &= bool(send_request("DELETE", f"{BASE_URL}/appointments/{appointment_id}"))
 
     return success
 
@@ -54,15 +49,14 @@ def test_missions():
     print("\n🔹 Test CRUD Missions")
     success = True
 
-    # CREATE (Ajout d'une mission de déménagement/livraison)
     mission_data = {
-        "type": "Déménagement",
+        "type": "Moving",
         "client": "Mr. Dupont",
-        "adresse": "10 Boulevard Haussmann, Paris",
+        "address": "10 Boulevard Haussmann, Paris",
         "date": "2025-05-01",
-        "prixHT": 2000.0,
-        "prixTTC": 2400.0,
-        "salaire": 600.0,
+        "priceHT": 2000.0,
+        "priceTTC": 2400.0,
+        "salary": 600.0,
         "charges": 400.0
     }
     response = send_request("POST", f"{BASE_URL}/missions", mission_data)
@@ -71,69 +65,124 @@ def test_missions():
 
     send_request("GET", f"{BASE_URL}/missions")
 
-    # UPDATE (Modifier une mission)
     if mission_id:
         update_data = {
-            "type": "Livraison",
+            "type": "Delivery",
             "client": "Mme. Lefevre",
-            "adresse": "78 Rue de Rivoli, Paris",
+            "address": "78 Rue de Rivoli, Paris",
             "date": "2025-05-10",
-            "prixHT": 800.0,
-            "prixTTC": 960.0,
-            "salaire": 250.0,
+            "priceHT": 800.0,
+            "priceTTC": 960.0,
+            "salary": 250.0,
             "charges": 150.0
         }
         success &= bool(send_request("PUT", f"{BASE_URL}/missions/{mission_id}", update_data))
 
-    # DELETE (Supprimer une mission)
-    if mission_id:
         success &= bool(send_request("DELETE", f"{BASE_URL}/missions/{mission_id}"))
 
     return success
 
 def test_finance():
-    print("\n🔹 Test CRUD Finances")
+    print("\n🔹 Test CRUD Finance")
     success = True
 
-    # CREATE (Ajout d'un investissement en lien avec le métier)
-    investissement_data = {
-        "nom": "Achat d'un camion de déménagement",
-        "montant": 25000.0,
+    finance_data = {
+        "name": "Truck purchase",
+        "amount": 28080.0,
         "date": "2025-03-15",
-        "categorie": "Véhicule"
+        "category": "Vehicle"
     }
-    response = send_request("POST", f"{BASE_URL}/finance", investissement_data)
-    investissement_id = response.get("id") if response else None
+    response = send_request("POST", f"{BASE_URL}/finance", finance_data)
+    finance_id = response.get("id") if response else None
     success &= bool(response)
 
     send_request("GET", f"{BASE_URL}/finance")
 
-    # UPDATE (Modifier un investissement)
-    if investissement_id:
+    if finance_id:
         update_data = {
-            "nom": "Achat de matériel de manutention",
-            "montant": 5000.0,
+            "name": "Equipment purchase",
+            "amount": 8080.0,
             "date": "2025-04-01",
-            "categorie": "Équipement"
+            "category": "Equipment"
         }
-        success &= bool(send_request("PUT", f"{BASE_URL}/finance/{investissement_id}", update_data))
+        success &= bool(send_request("PUT", f"{BASE_URL}/finance/{finance_id}", update_data))
 
-    # DELETE (Supprimer un investissement)
-    if investissement_id:
-        success &= bool(send_request("DELETE", f"{BASE_URL}/finance/{investissement_id}"))
+        success &= bool(send_request("DELETE", f"{BASE_URL}/finance/{finance_id}"))
+
+    return success
+
+def test_quotes():
+    print("\n🔹 Test CRUD Quotes")
+    success = True
+
+    quote_data = {
+        "client_name": "Société ABC",
+        "client_address": "23 Rue Lafayette, Paris",
+        "client_city": "Paris",
+        "date": "2025-04-10",
+        "prestations": [
+            {"description": "Déménagement Paris → Lyon", "prix": 400, "quantite": 1},
+            {"description": "Location camion", "prix": 100, "quantite": 1}
+        ],
+        "totalHT": 500,
+        "totalTVA": 100,
+        "totalTTC": 600
+    }
+    response = send_request("POST", f"{BASE_URL}/quote", quote_data)
+    quote_id = response.get("id") if response else None
+    success &= bool(response)
+
+    send_request("GET", f"{BASE_URL}/quote")
+
+    if quote_id:
+        update_data = {
+            "client_name": "Mme Lefevre",
+            "client_address": "5 rue Oberkampf",
+            "client_city": "Lyon",
+            "date": "2025-04-12",
+            "prestations": [
+                {"description": "Transport meuble", "prix": 300, "quantite": 1}
+            ],
+            "totalHT": 300,
+            "totalTVA": 60,
+            "totalTTC": 360
+        }
+        success &= bool(send_request("PUT", f"{BASE_URL}/quote/{quote_id}", update_data))
+
+        success &= bool(send_request("DELETE", f"{BASE_URL}/quote/{quote_id}"))
 
     return success
 
 if __name__ == "__main__":
-    print("🚀 Début des tests API")
-    
-    rdv_ok = test_rdvs()
+    print("🚀 Running All API Tests")
+
+    rdv_ok = test_appointments()
     mission_ok = test_missions()
     finance_ok = test_finance()
+    quote_ok = test_quotes()
 
-    print("\n✅ Tests terminés")
-
-    if rdv_ok and mission_ok and finance_ok:
-        print("🎉 ✅ TOUS LES TESTS ONT RÉUSSI !")
+    print("\n✅ Final Report")
+    if rdv_ok:
+        print("✅ Appointment tests passed")
     else:
-        print("❌ ATTENTION : Certains tests ont échoué.")
+        print("❌ Appointment tests failed")
+
+    if mission_ok:
+        print("✅ Missions tests passed")
+    else:
+        print("❌ Missions tests failed")
+
+    if finance_ok:
+        print("✅ Finance tests passed")
+    else:
+        print("❌ Finance tests failed")
+
+    if quote_ok:
+        print("✅ Quote tests passed")
+    else:
+        print("❌ Quote tests failed")
+
+    if rdv_ok and mission_ok and finance_ok and quote_ok:
+        print("\n🎉 ✅ ALL TESTS PASSED!")
+    else:
+        print("\n❌ Some tests failed. Please check logs.")

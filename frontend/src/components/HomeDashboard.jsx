@@ -15,54 +15,52 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Tooltip, Le
 
 const HomeDashboard = () => {
   const [missions, setMissions] = useState([]);
-  const [investissements, setInvestissements] = useState([]);
+  const [investments, setInvestments] = useState([]);
 
   useEffect(() => {
     api.get("/missions").then((res) => setMissions(res.data)).catch(console.error);
-    api.get("/finance").then((res) => setInvestissements(res.data)).catch(console.error);
+    api.get("/finance").then((res) => setInvestments(res.data)).catch(console.error);
   }, []);
 
-  // 📊 Statistiques missions
   const totalMissions = missions.length;
-  const demenagements = missions.filter((m) => m.type.toLowerCase().includes("déménagement")).length;
-  const livraisons = missions.filter((m) => m.type.toLowerCase().includes("livraison")).length;
+  const movingCount = missions.filter((m) => m.type.toLowerCase().includes("moving")).length;
+  const deliveryCount = missions.filter((m) => m.type.toLowerCase().includes("delivery")).length;
 
-  const totalCA = missions.reduce((acc, m) => acc + (Number(m.prixTTC) || 0), 0);
-  const totalSalaires = missions.reduce((acc, m) => acc + (Number(m.salaire) || 0), 0);
+  const totalRevenue = missions.reduce((acc, m) => acc + (Number(m.priceTTC) || 0), 0);
+  const totalSalaries = missions.reduce((acc, m) => acc + (Number(m.salary) || 0), 0);
   const totalCharges = missions.reduce((acc, m) => acc + (Number(m.charges) || 0), 0);
 
-  const totalInvestissements = investissements.reduce((acc, i) => acc + Number(i.montant), 0);
-  const investParPersonne = investissements.reduce((acc, i) => {
-    if (!i.nom) return acc;
-    acc[i.nom] = (acc[i.nom] || 0) + Number(i.montant);
+  const totalInvestment = investments.reduce((acc, i) => acc + Number(i.amount), 0);
+  const investmentByPerson = investments.reduce((acc, i) => {
+    if (!i.name) return acc;
+    acc[i.name] = (acc[i.name] || 0) + Number(i.amount);
     return acc;
   }, {});
 
-  // 📅 CA par mois
-  const caParMois = {};
+  const revenuePerMonth = {};
   missions.forEach((m) => {
     if (!m.date) return;
-    const mois = new Date(m.date).toLocaleString("fr-FR", { month: "short", year: "numeric" });
-    caParMois[mois] = (caParMois[mois] || 0) + (Number(m.prixTTC) || 0);
+    const key = new Date(m.date).toLocaleString("en-US", { month: "short", year: "numeric" });
+    revenuePerMonth[key] = (revenuePerMonth[key] || 0) + (Number(m.priceTTC) || 0);
   });
 
-  const graphCA = {
-    labels: Object.keys(caParMois),
+  const barData = {
+    labels: Object.keys(revenuePerMonth),
     datasets: [
       {
-        label: "Chiffre d'affaires (€)",
-        data: Object.values(caParMois),
+        label: "Monthly Revenue (€)",
+        data: Object.values(revenuePerMonth),
         backgroundColor: "#3b82f6",
       },
     ],
   };
 
-  const graphPie = {
-    labels: ["Déménagements", "Livraisons"],
+  const pieData = {
+    labels: ["Moving", "Delivery"],
     datasets: [
       {
-        label: "Répartition missions",
-        data: [demenagements, livraisons],
+        label: "Mission Type",
+        data: [movingCount, deliveryCount],
         backgroundColor: ["#10b981", "#f59e0b"],
       },
     ],
@@ -70,51 +68,51 @@ const HomeDashboard = () => {
 
   return (
     <div className="p-6 space-y-8">
-      <h1 className="text-3xl font-bold mb-4">📊 Tableau de bord</h1>
+      <h1 className="text-3xl font-bold mb-4">📊 Dashboard</h1>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-white shadow rounded p-4 border">
           <h2 className="text-xl font-semibold mb-2">📋 Missions</h2>
-          <p>Total : {totalMissions}</p>
-          <p>🚚 Déménagements : {demenagements}</p>
-          <p>📦 Livraisons : {livraisons}</p>
+          <p>Total: {totalMissions}</p>
+          <p>🚚 Moving: {movingCount}</p>
+          <p>📦 Delivery: {deliveryCount}</p>
         </div>
 
         <div className="bg-white shadow rounded p-4 border">
-          <h2 className="text-xl font-semibold mb-2">💰 Chiffre d'affaires</h2>
-          <p>Total TTC : {totalCA.toFixed(2)} €</p>
+          <h2 className="text-xl font-semibold mb-2">💰 Revenue</h2>
+          <p>Total (TTC): {totalRevenue.toFixed(2)} €</p>
         </div>
 
         <div className="bg-white shadow rounded p-4 border">
-          <h2 className="text-xl font-semibold mb-2">👷 Charges & Salaires</h2>
-          <p>Salaires : {totalSalaires.toFixed(2)} €</p>
-          <p>Charges : {totalCharges.toFixed(2)} €</p>
+          <h2 className="text-xl font-semibold mb-2">👷 Salaries & Charges</h2>
+          <p>Salaries: {totalSalaries.toFixed(2)} €</p>
+          <p>Charges: {totalCharges.toFixed(2)} €</p>
         </div>
 
         <div className="bg-white shadow rounded p-4 border">
-          <h2 className="text-xl font-semibold mb-2">🏦 Investissements</h2>
-          <p>Total : {totalInvestissements.toFixed(2)} €</p>
+          <h2 className="text-xl font-semibold mb-2">🏦 Investments</h2>
+          <p>Total: {totalInvestment.toFixed(2)} €</p>
           <ul className="mt-2">
-            {Object.entries(investParPersonne).map(([nom, montant]) => (
-              <li key={nom} className="flex justify-between text-sm">
-                <span>👤 {nom}</span>
-                <span>{montant.toFixed(2)} €</span>
+            {Object.entries(investmentByPerson).map(([name, amount]) => (
+              <li key={name} className="flex justify-between text-sm">
+                <span>👤 {name}</span>
+                <span>{amount.toFixed(2)} €</span>
               </li>
             ))}
           </ul>
         </div>
       </div>
 
-      {/* Graphiques */}
+      {/* Graphs */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-white shadow rounded p-4 border">
-          <h2 className="text-lg font-semibold mb-4">📅 CA par mois</h2>
-          <Bar data={graphCA} />
+          <h2 className="text-lg font-semibold mb-4">📅 Revenue by Month</h2>
+          <Bar data={barData} />
         </div>
 
         <div className="bg-white shadow rounded p-4 border">
-          <h2 className="text-lg font-semibold mb-4">📊 Répartition des missions</h2>
-          <Pie data={graphPie} />
+          <h2 className="text-lg font-semibold mb-4">📊 Mission Type Breakdown</h2>
+          <Pie data={pieData} />
         </div>
       </div>
     </div>
